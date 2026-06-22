@@ -26,28 +26,23 @@ const GlobalLayout = ({ children }) => {
     initTheme();
   }, [initTheme]);
 
-  // =================================================================
-  // 🌟 SMART NAVIGATION ARRAY (Links + Action Buttons mixed!)
-  // =================================================================
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { 
       name: "Give Feedback", 
-      isAction: true, // <--- Ye flag batayega ki ye button hai
+      isAction: true, 
       onClick: () => { setIsFeedbackModalOpen(true); setIsMobileMenuOpen(false); },
       icon: <MessageSquarePlus size={20} /> 
     },
     { name: "Settings", path: "/settings", icon: <Settings size={20} /> },
   ];
 
-  // Agar CTO (Admin) sahab hain, toh unka secret darwaza khol do
   if (user?.role === "admin") {
     navLinks.push({ name: "Admin Panel", path: "/admin", icon: <ShieldAlert size={20} /> });
   }
 
   const isWorkspace = location.pathname.includes("/create-resume") || location.pathname.includes("/preview");
 
-  // 🌟 FEEDBACK SUBMIT HANDLER
   const handleFeedbackSubmit = async (e) => {
     e.preventDefault();
     if (!feedbackMessage.trim()) return toast.error("Please enter a message!");
@@ -66,7 +61,6 @@ const GlobalLayout = ({ children }) => {
     }
   };
 
-  // 🌟 SECURE LOGOUT HANDLER
   const handleLogout = async () => {
     try {
       await axios.get(import.meta.env.VITE_API_URL + "/api/auth/logout", { withCredentials: true });
@@ -78,18 +72,36 @@ const GlobalLayout = ({ children }) => {
     }
   };
 
-  // 💳 RAZORPAY ENGINE
+  // 💳 RAZORPAY ENGINE (BULLETPROOF V2)
   const handleRazorpayCheckout = async () => {
-    if (!window.Razorpay) return toast.error("Razorpay SDK failed to load. Check connection.");
+    if (!window.Razorpay) return toast.error("Razorpay SDK failed to load. Please check your internet connection.");
     setIsCheckoutLoading(true);
-    const toastId = toast.loading("Generating secure bill...");
+    const toastId = toast.loading("Connecting secure gateway...");
 
     try {
       const orderRes = await axios.post(import.meta.env.VITE_API_URL + "/api/payment/create-order", {}, { withCredentials: true });
       const order = orderRes.data.order;
 
+      const rzpKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+      // 🔥 THE SHIELD: Pre-flight sanity checks before Razorpay SDK commits suicide
+      if (!rzpKeyId || rzpKeyId.includes('"') || rzpKeyId.includes('{')) {
+        toast.dismiss(toastId);
+        toast.error("Frontend Config Error: Malformed Razorpay Public Key!");
+        console.error("🚨 RAZORPAY KEY EVALUATED AS:", rzpKeyId);
+        setIsCheckoutLoading(false);
+        return;
+      }
+
+      if (!order || !order.id) {
+        toast.dismiss(toastId);
+        toast.error("Backend failed to return a valid Order ID!");
+        setIsCheckoutLoading(false);
+        return;
+      }
+
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: rzpKeyId,
         amount: order.amount,
         currency: order.currency,
         name: "MintCV Pro",
@@ -112,16 +124,23 @@ const GlobalLayout = ({ children }) => {
             toast.error(err.response?.data?.message || "Payment Verification Failed", { id: verifyToast });
           }
         },
-        prefill: { name: user?.username, email: user?.email },
+        // 🔥 FIX: Casted explicitly to String to strip Zustand Proxy wrappers
+        prefill: { 
+          name: String(user?.username || "MintCV Member"), 
+          email: String(user?.email || "member@mintcv.com") 
+        },
         theme: { color: "#10B981" },
       };
 
       const rzp = new window.Razorpay(options);
-      rzp.on("payment.failed", function (response) { toast.error(response.error.description); });
+      rzp.on("payment.failed", function (response) { 
+        toast.error(response.error.description || "Transaction dropped by gateway."); 
+      });
       rzp.open();
       toast.dismiss(toastId);
     } catch (error) {
-      toast.error("Failed to initiate gateway", { id: toastId });
+      toast.error("Failed to initiate gateway connection.", { id: toastId });
+      console.error("Gateway Handshake Dump:", error);
     } finally {
       setIsCheckoutLoading(false);
     }
@@ -151,11 +170,8 @@ const GlobalLayout = ({ children }) => {
           <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-8 object-contain" />
         </div>
         
-        {/* 🌟 TOP NAVIGATION SECTION */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navLinks.map((item) => {
-            
-            // 1. Agar ye Action Button hai (Give Feedback)
             if (item.isAction) {
               return (
                 <button
@@ -168,7 +184,6 @@ const GlobalLayout = ({ children }) => {
               );
             }
 
-            // 2. Normal Route Links (Dashboard, Settings, Admin)
             const isActive = location.pathname === item.path;
             return (
               <Link key={item.name} to={item.path} onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${isActive ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"}`}>
@@ -178,7 +193,6 @@ const GlobalLayout = ({ children }) => {
           })}
         </nav>
 
-        {/* 🌟 BOTTOM SECTION (Cleaned: Only Dark Mode & Logout) */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
           <button onClick={toggleTheme} className="hidden md:flex w-full items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-colors">
             <span className="font-medium">Dark Mode</span>

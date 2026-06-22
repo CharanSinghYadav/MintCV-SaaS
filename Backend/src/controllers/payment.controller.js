@@ -15,15 +15,22 @@ export const createPremiumOrder = async (req, res) => {
     try {
         const PREMIUM_PRICE = 199; 
 
+        // 🔥 SAFETY SHIELD: Ensure ID is strictly a primitive String
+        const safeUserId = String(req.user?.id || req.user?._id || "unknown");
+
         const options = {
             amount: PREMIUM_PRICE * 100,
             currency: "INR",
-            receipt: `mintcv_receipt_${req.user.id.slice(-6)}`,
+            receipt: `mintcv_receipt_${safeUserId.slice(-6)}`,
         };
 
         const order = await razorpay.orders.create(options);
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(safeUserId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found for payment processing." });
+        }
+
         user.razorpayOrderId = order.id;
         await user.save();
 
@@ -54,7 +61,9 @@ export const verifyPremiumPayment = async (req, res) => {
             return res.status(400).json({ success: false, message: "Payment Verification Failed! Nakli Transaction." });
         }
 
-        const user = await User.findById(req.user.id);
+        const safeUserId = String(req.user?.id || req.user?._id);
+        const user = await User.findById(safeUserId);
+        
         user.plan = "premium";
         user.razorpayPaymentId = razorpay_payment_id;
         await user.save();
