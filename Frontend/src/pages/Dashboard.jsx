@@ -220,7 +220,7 @@ const Dashboard = () => {
                       <Edit3 size={14} /> Edit
                     </button>
                     <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer">
-                      <Eye size={14} /> View
+                      <Eye size={14} /> Download
                     </button>
                     <button onClick={() => navigate(`/analytics/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-2.5 rounded-xl transition-colors cursor-pointer">
                       <Sparkles size={14} /> Score
