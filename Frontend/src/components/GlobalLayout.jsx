@@ -26,7 +26,6 @@ const GlobalLayout = ({ children }) => {
     initTheme();
   }, [initTheme]);
 
-  // 🌟 ADDED INTERVIEW VAULT TO NAVIGATION
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Interview Vault", path: "/interviews", icon: <BrainCircuit size={20} /> },
@@ -148,8 +147,8 @@ const GlobalLayout = ({ children }) => {
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-hidden font-sans">
       
       <div className="md:hidden fixed top-0 w-full h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 z-50">
-        <div className="flex items-center h-full">
-          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-7 sm:h-8 object-contain drop-shadow-sm" />
+        <div className="flex items-center h-full group cursor-pointer">
+          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-7 sm:h-8 object-contain drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
         </div>
         <div className="flex items-center gap-4">
           <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -162,8 +161,10 @@ const GlobalLayout = ({ children }) => {
       </div>
 
       <aside className={`fixed md:static top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 z-40 ${isMobileMenuOpen ? "translate-x-0 pt-16" : "-translate-x-full md:translate-x-0"}`}>
-        <div className="hidden md:flex items-center gap-2 h-20 px-6 border-b border-slate-200 dark:border-slate-800">
-          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-8 object-contain" />
+        {/* 🌟 FIX: Elegant Logo Animation */}
+        <div className="hidden md:flex items-center gap-2 h-20 px-6 border-b border-slate-200 dark:border-slate-800 group cursor-pointer relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
+          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-8 object-contain transition-transform duration-500 group-hover:scale-105" />
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">

@@ -5,8 +5,16 @@ import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
   FileText, CheckCircle, TrendingUp, Plus, Edit3, Eye, Sparkles,
-  MessageSquare, Search, Trash2, AlertTriangle, Crown, Zap
+  MessageSquare, Search, Trash2, AlertTriangle, Crown, Zap, MoreVertical
 } from "lucide-react";
+
+// 🌟 FIX: Helper for beautiful name formatting
+const formatName = (rawName) => {
+  if (!rawName) return "User";
+  return rawName
+    .replace(/[_]/g, " ")
+    .replace(/\b\w/g, char => char.toUpperCase());
+};
 
 const Dashboard = () => {
   const { user, openPaywall } = useAuthStore(); 
@@ -14,6 +22,7 @@ const Dashboard = () => {
 
   const [resumes, setResumes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState(null); // Dropdown toggler
 
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -22,7 +31,6 @@ const Dashboard = () => {
   const [resumeToDelete, setResumeToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetching resumes
   useEffect(() => {
     const fetchMyResumes = async () => {
       try {
@@ -37,12 +45,8 @@ const Dashboard = () => {
     fetchMyResumes();
   }, []);
 
+  // 🌟 FIX: Updated validation rule (Start blank is ALWAYS FREE, Import PDF triggers Bouncer later via API)
   const handleInitiateCreate = (actionType) => {
-    if (user?.plan === "free" && resumes.length >= 1) {
-      openPaywall(); // Global trigger
-      return;
-    }
-
     if (actionType === "blank") navigate("/create-resume");
     if (actionType === "import") fileInputRef.current.click();
   };
@@ -69,7 +73,7 @@ const Dashboard = () => {
     } catch (error) {
       if (error.response?.data?.requiresUpgrade) {
         toast.error("Daily AI limit reached! Upgrade to Premium.", { id: toastId });
-        openPaywall(); //Global trigger on AI limit
+        openPaywall(); 
       } else {
         toast.error("Failed to parse PDF.", { id: toastId });
       }
@@ -97,16 +101,19 @@ const Dashboard = () => {
 
   const scoredResumes = resumes.filter((r) => r.lastAtsScore && r.lastAtsScore > 0);
   const avgMatchScore = scoredResumes.length ? Math.round(scoredResumes.reduce((acc, r) => acc + r.lastAtsScore, 0) / scoredResumes.length) : 0;
+  // 🌟 FIX: Real interviews count
+  const totalInterviews = resumes.filter(r => r.interviewPrepCache).length;
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="w-full space-y-8 animate-in fade-in duration-500 pb-12" onClick={() => setOpenMenuId(null)}>
       <Toaster position="top-right" />
 
       {/* Welcome Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
+          {/* 🌟 FIX: Beautiful formatted Name */}
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Welcome back, <span className="capitalize">{user?.username}</span> 👋
+            Welcome back, <span className="text-indigo-600 dark:text-indigo-400">{formatName(user?.username)}</span> 👋
           </h1>
           <p className="text-slate-500 mt-1">Create, evaluate and land your dream job.</p>
         </div>
@@ -134,7 +141,7 @@ const Dashboard = () => {
         </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4">
           <div className="p-3 bg-purple-50 dark:bg-purple-500/10 text-purple-500 rounded-xl"><MessageSquare size={24} /></div>
-          <div><p className="text-2xl font-bold text-slate-800 dark:text-white">0</p><p className="text-xs font-medium text-slate-500 uppercase">Interviews</p></div>
+          <div><p className="text-2xl font-bold text-slate-800 dark:text-white">{totalInterviews}</p><p className="text-xs font-medium text-slate-500 uppercase">Interviews</p></div>
         </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4">
           <div className="p-3 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-xl"><TrendingUp size={24} /></div>
@@ -147,60 +154,95 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">My Documents</h2>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
+            {/* 🌟 FIX: Removed duplicate Create New button, extended Search Bar */}
+            <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500" />
+              <input type="text" placeholder="Search resumes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
             </div>
-            <button onClick={() => handleInitiateCreate("blank")} className="hidden sm:flex bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-xl shadow-sm items-center gap-2">
-              <Plus size={18} /> Create New
-            </button>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-20"><div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div></div>
+          <div className="flex justify-center items-center py-20"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <div className="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl min-h-[280px] flex flex-col justify-center items-center p-6 hover:border-emerald-500 transition-all text-center relative overflow-hidden group">
+            <div className="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl min-h-[280px] flex flex-col justify-center items-center p-6 hover:border-indigo-500 transition-all text-center relative overflow-hidden group">
               <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                <Plus size={28} className="text-emerald-500" />
+                <Plus size={28} className="text-indigo-500" />
               </div>
               <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Create Document</h3>
-              <p className="text-xs text-slate-500 mb-6">{user?.plan === "free" ? "Free Plan: 1 Document Limit" : "Unlimited VIP Storage"}</p>
+              <p className="text-xs text-slate-500 mb-6">Build from scratch or scan PDF</p>
 
               <div className="flex flex-col gap-3 w-full max-w-[200px] z-10">
-                <button onClick={() => handleInitiateCreate("blank")} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
+                <button onClick={() => handleInitiateCreate("blank")} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors">
                   <Plus size={16} /> Start Blank
                 </button>
-                <button onClick={() => handleInitiateCreate("import")} disabled={isUploading} className="w-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-                  {isUploading ? "Parsing..." : <><Sparkles size={16} /> Import PDF</>}
+                <button onClick={() => handleInitiateCreate("import")} disabled={isUploading} className="w-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+                  {isUploading ? "Parsing..." : <><Sparkles size={16} /> Scan PDF (1/Day)</>}
                 </button>
                 <input type="file" accept="application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
               </div>
             </div>
 
             {resumes.filter((r) => r.title.toLowerCase().includes(searchQuery.toLowerCase())).map((resume) => (
-              <div key={resume._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-lg transition-all flex flex-col justify-between">
-                <div className="h-36 bg-slate-800/40 border-b border-slate-800 relative flex justify-center items-end overflow-hidden pt-4">
-                  <div className="w-28 h-32 bg-slate-900 rounded-t-md border border-slate-700 p-2.5 flex flex-col gap-2 relative transform translate-y-3">
-                    <div className="text-center border-b border-slate-800 pb-1.5 truncate"><h4 className="text-[8px] font-bold text-white uppercase">{resume.title}</h4></div>
-                    <div className="flex flex-col gap-1.5 opacity-40"><div className="w-full h-[3px] bg-slate-600 rounded-full"></div><div className="w-5/6 h-[3px] bg-slate-700 rounded-full"></div></div>
+              <div key={resume._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-lg transition-all flex flex-col justify-between group relative">
+                
+                {/* 🌟 FIX: Light/Dark Mode adaptive Thumbnail */}
+                <div className="h-40 bg-slate-100 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 relative flex justify-center items-end overflow-hidden pt-4 transition-colors">
+                  <div className="w-32 h-36 bg-white dark:bg-slate-900 rounded-t-md shadow-md border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2 relative transform translate-y-3 group-hover:translate-y-1 transition-transform">
+                    <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-1.5 truncate">
+                      <h4 className="text-[9px] font-bold text-slate-800 dark:text-slate-300 uppercase">{resume.title}</h4>
+                    </div>
+                    <div className="flex flex-col gap-1.5 opacity-60">
+                      <div className="w-full h-[3px] bg-slate-300 dark:bg-slate-600 rounded-full"></div>
+                      <div className="w-5/6 h-[3px] bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                    </div>
                   </div>
-                  {resume.lastAtsScore && <div className="absolute top-3 left-3 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">{resume.lastAtsScore}% Match</div>}
-                  <button onClick={() => setResumeToDelete(resume._id)} className="absolute top-3 right-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs p-1.5 rounded-full border border-red-500/20"><Trash2 size={14} /></button>
+                  
+                  {resume.lastAtsScore && (
+                    <div className="absolute top-3 left-3 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/30">
+                      {resume.lastAtsScore}% Match
+                    </div>
+                  )}
+
+                  {/* 🌟 FIX: Clean Kebab Menu for extra actions */}
+                  <div className="absolute top-3 right-3">
+                    <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === resume._id ? null : resume._id); }} className="bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm transition-colors">
+                      <MoreVertical size={16} />
+                    </button>
+                    {openMenuId === resume._id && (
+                      <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden text-sm font-medium animate-in slide-in-from-top-2">
+                        <button onClick={(e) => { e.stopPropagation(); navigate(`/analytics/${resume._id}`); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-600 transition-colors">
+                          <Sparkles size={14} /> ATS Scan
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); navigate(`/interview-prep/${resume._id}`); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 transition-colors">
+                          <MessageSquare size={14} /> AI Mock
+                        </button>
+                        <div className="h-px w-full bg-slate-100 dark:bg-slate-700"></div>
+                        <button onClick={(e) => { e.stopPropagation(); setResumeToDelete(resume._id); setOpenMenuId(null); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                          <Trash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* 🌟 FIX: Simplified Primary Action Buttons */}
                 <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white truncate">{resume.title}</h3>
-                    <p className="text-[11px] text-slate-500 mt-1">Updated: {new Date(resume.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-slate-800 dark:text-white truncate" title={resume.title}>{resume.title}</h3>
+                    <p className="text-xs text-slate-500 mt-1">Edited: {new Date(resume.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mt-5">
-                    <button onClick={() => navigate("/create-resume", { state: { importedData: resume } })} className="flex justify-center items-center gap-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg"><Edit3 size={14} /> Edit</button>
-                    <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg"><Eye size={14} /> View</button>
-                    <button onClick={() => navigate(`/analytics/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 py-2 rounded-lg"><Sparkles size={14} /> Score</button>
-                    <button onClick={() => navigate(`/interview-prep/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-xs font-medium bg-teal-500/10 text-teal-400 py-2 rounded-lg"><MessageSquare size={14} /> Prep</button>
+                  <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <button onClick={() => navigate("/create-resume", { state: { importedData: resume } })} className="flex justify-center items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl transition-colors">
+                      <Edit3 size={14} /> Edit
+                    </button>
+                    <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl transition-colors shadow-sm">
+                      <Eye size={14} /> Preview
+                    </button>
                   </div>
                 </div>
+
               </div>
             ))}
           </div>

@@ -1,14 +1,13 @@
 import { create } from 'zustand';
 
 export const useThemeStore = create((set) => ({
-  // Default theme hum local storage se padhenge, ya fir 'light' set karenge
-  theme: localStorage.getItem('mintcv-theme') || 'light',
+  // 🌟 FIX: Default theme ab strictly 'dark' hai
+  theme: localStorage.getItem('mintcv-theme') || 'dark',
   
   toggleTheme: () => set((state) => {
     const newTheme = state.theme === 'light' ? 'dark' : 'light';
     localStorage.setItem('mintcv-theme', newTheme);
     
-    // HTML tag par .dark class lagana aur hatana
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -18,9 +17,9 @@ export const useThemeStore = create((set) => ({
     return { theme: newTheme };
   }),
 
-  // Jab app pehli baar load ho toh ye function run karna zaroori hai
   initTheme: () => {
-    const currentTheme = localStorage.getItem('mintcv-theme') || 'light';
+    // 🌟 FIX: Init ke time bhi fallback 'dark' kar diya
+    const currentTheme = localStorage.getItem('mintcv-theme') || 'dark';
     if (currentTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {

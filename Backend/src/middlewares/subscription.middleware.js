@@ -2,9 +2,10 @@
 ========================================================
 FILE PURPOSE: subscription.middleware.js
 ========================================================
-Ye middleware check karega ki user free plan par hai ya premium.
-Agar free par hai, toh kya usne aaj ki apni AI limit cross kar li hai?
-Agar naya din ho gaya hai, toh limit wapas 0 (reset) kar dega.
+Ye middleware "Route-Aware" Bouncer hai.
+1. 'Enhance' API ko completely lock karta hai free users ke liye.
+2. 'Upload PDF' aur 'ATS Scan' pe 1 request/day ki limit lagata hai.
+3. Midnight par limit wapas 0 (reset) karta hai.
 ========================================================
 */
 
@@ -13,22 +14,31 @@ import { User } from "../models/user.model.js";
 export const checkAiLimit = async (req, res, next) => {
     try {
         // req.user.id hume authUser middleware se milta hai
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id || req.user._id);
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
         // 🌟 RULE 1: PREMIUM USERS KA VIP PASS
-        // Agar plan premium hai, toh koi check mat karo, seedha aage jaane do
-        if (user.plan === "premium") {
+        // Agar plan premium/admin hai, toh koi check mat karo, seedha aage jaane do
+        if (user.plan === "premium" || user.plan === "PRO" || user.role === "admin") {
             return next();
         }
 
-        // 🌟 RULE 2: THE MIDNIGHT RESET (Naya din check karna)
-        // JavaScript ka `toDateString()` time hata kar sirf date deta hai (e.g., "Wed Jun 17 2026")
+        // 🌟 RULE 2: STRICT FEATURE LOCK (Enhance is PRO exclusively)
+        // Agar free user '/enhance' URL hit kar raha hai, toh seedha block karo
+        if (req.originalUrl.includes("/enhance")) {
+            return res.status(403).json({
+                success: false,
+                message: "AI Text Enhancer is a Premium exclusive feature. Upgrade to unlock this magic! ✨",
+                requiresUpgrade: true
+            });
+        }
+
+        // 🌟 RULE 3: THE MIDNIGHT RESET (Naya din check karna)
         const today = new Date().toDateString(); 
-        const lastUsageDate = new Date(user.lastAiUsageDate).toDateString();
+        const lastUsageDate = user.lastAiUsageDate ? new Date(user.lastAiUsageDate).toDateString() : null;
 
         // Agar user ka aakhri usage 'aaj' se match nahi karta, matlab din badal gaya hai
         if (today !== lastUsageDate) {
@@ -37,14 +47,14 @@ export const checkAiLimit = async (req, res, next) => {
             await user.save(); // Database me save kar do
         }
 
-        // 🌟 RULE 3: THE LIMIT CHECK
+        // 🌟 RULE 4: THE DAILY AI LIMIT CHECK (For ATS & PDF Upload)
         const FREE_DAILY_LIMIT = 1;
 
         if (user.dailyAiUsageCount >= FREE_DAILY_LIMIT) {
             // Agar limit puri ho gayi hai, toh 403 (Forbidden) error bhejo
             return res.status(403).json({
                 success: false,
-                message: "You have reached your daily limit of 1 AI request. Please upgrade to Premium.",
+                message: "You have reached your daily limit of 1 AI request (ATS/PDF Parse). Please upgrade to Premium.",
                 requiresUpgrade: true // Frontend is flag ko dekh kar Premium ka popup dikhayega
             });
         }
