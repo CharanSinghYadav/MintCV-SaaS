@@ -18,34 +18,27 @@ Ye bouncer check karega:
 import jwt from "jsonwebtoken";
 import { BlacklistToken } from "../models/blacklist.model.js";
 
-// Middleware function me hamesha 'next' parameter hota hai
 const authUser = async (req, res, next) => {
     try {
-        // 1. Cookie se token nikalo
-        const token = req.cookies?.token;
+        // 🔥 FIX: Token ko Cookie me dhoondo, ya fir 'Authorization' header me dhoondo
+        const token = req.cookies?.token || req.header("Authorization")?.replace("Bearer ", "");
         
         if (!token) {
             return res.status(401).json({ message: "Unauthorized Request: Token missing" });
         }
 
-        // 2. Check karo token blacklist me toh nahi hai (Logout toh nahi kar diya tha?)
         const isTokenBlacklisted = await BlacklistToken.findOne({ token });
 
         if (isTokenBlacklisted) {
             return res.status(401).json({ message: "Unauthorized Request: Token is blacklisted" });    
         }
 
-        // 3. Token ko verify karo JWT Secret se
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-        
-        // 4. Decoded information (jaise user id) ko aage bhej do
         req.user = decodedToken;
         
-        // Sab kuch theek hai, ab route ko aage jaane do (Darwaza khol do)
         next();
 
     } catch (error) {
-        // Agar token nakli hai ya expire ho gaya hai toh verify() error throw karta hai
         return res.status(401).json({ message: "Invalid or Expired token" });
     }
 };
