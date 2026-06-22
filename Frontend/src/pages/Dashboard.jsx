@@ -211,7 +211,15 @@ const Dashboard = () => {
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div className="mb-2">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white truncate" title={resume.title}>{resume.title}</h3>
-                    <p className="text-xs text-slate-500 mt-1">Updated: {new Date(resume.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Updated: {new Date(resume.updatedAt).toLocaleString("en-US", { 
+                        month: "short", 
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true 
+                      })}
+                    </p>
                   </div>
                   
                   {/* 🌟 FIX: UX-Corrected Button Grid (Eye icon = 'View') */}
