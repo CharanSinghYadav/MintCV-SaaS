@@ -5,10 +5,10 @@ import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import {
   FileText, CheckCircle, TrendingUp, Plus, Edit3, Eye, Sparkles,
-  MessageSquare, Search, Trash2, AlertTriangle, Crown, Zap, MoreVertical
+  MessageSquare, Search, Trash2, AlertTriangle, Crown, Zap
 } from "lucide-react";
 
-// 🌟 FIX: Helper for beautiful name formatting
+// Helper for beautiful name formatting
 const formatName = (rawName) => {
   if (!rawName) return "User";
   return rawName
@@ -22,7 +22,6 @@ const Dashboard = () => {
 
   const [resumes, setResumes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openMenuId, setOpenMenuId] = useState(null); // Dropdown toggler
 
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -45,7 +44,6 @@ const Dashboard = () => {
     fetchMyResumes();
   }, []);
 
-  // 🌟 FIX: Updated validation rule (Start blank is ALWAYS FREE, Import PDF triggers Bouncer later via API)
   const handleInitiateCreate = (actionType) => {
     if (actionType === "blank") navigate("/create-resume");
     if (actionType === "import") fileInputRef.current.click();
@@ -101,17 +99,15 @@ const Dashboard = () => {
 
   const scoredResumes = resumes.filter((r) => r.lastAtsScore && r.lastAtsScore > 0);
   const avgMatchScore = scoredResumes.length ? Math.round(scoredResumes.reduce((acc, r) => acc + r.lastAtsScore, 0) / scoredResumes.length) : 0;
-  // 🌟 FIX: Real interviews count
   const totalInterviews = resumes.filter(r => r.interviewPrepCache).length;
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-500 pb-12" onClick={() => setOpenMenuId(null)}>
+    <div className="w-full space-y-8 animate-in fade-in duration-500 pb-12">
       <Toaster position="top-right" />
 
       {/* Welcome Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          {/* 🌟 FIX: Beautiful formatted Name */}
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             Welcome back, <span className="text-indigo-600 dark:text-indigo-400">{formatName(user?.username)}</span> 👋
           </h1>
@@ -154,7 +150,6 @@ const Dashboard = () => {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
           <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">My Documents</h2>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            {/* 🌟 FIX: Removed duplicate Create New button, extended Search Bar */}
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input type="text" placeholder="Search resumes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
@@ -187,7 +182,6 @@ const Dashboard = () => {
             {resumes.filter((r) => r.title.toLowerCase().includes(searchQuery.toLowerCase())).map((resume) => (
               <div key={resume._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-lg transition-all flex flex-col justify-between group relative">
                 
-                {/* 🌟 FIX: Light/Dark Mode adaptive Thumbnail */}
                 <div className="h-40 bg-slate-100 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 relative flex justify-center items-end overflow-hidden pt-4 transition-colors">
                   <div className="w-32 h-36 bg-white dark:bg-slate-900 rounded-t-md shadow-md border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2 relative transform translate-y-3 group-hover:translate-y-1 transition-transform">
                     <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-1.5 truncate">
@@ -205,40 +199,30 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  {/* 🌟 FIX: Clean Kebab Menu for extra actions */}
-                  <div className="absolute top-3 right-3">
-                    <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === resume._id ? null : resume._id); }} className="bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm transition-colors">
-                      <MoreVertical size={16} />
-                    </button>
-                    {openMenuId === resume._id && (
-                      <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden text-sm font-medium animate-in slide-in-from-top-2">
-                        <button onClick={(e) => { e.stopPropagation(); navigate(`/analytics/${resume._id}`); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:text-emerald-600 transition-colors">
-                          <Sparkles size={14} /> ATS Scan
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); navigate(`/interview-prep/${resume._id}`); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 transition-colors">
-                          <MessageSquare size={14} /> AI Mock
-                        </button>
-                        <div className="h-px w-full bg-slate-100 dark:bg-slate-700"></div>
-                        <button onClick={(e) => { e.stopPropagation(); setResumeToDelete(resume._id); setOpenMenuId(null); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
-                          <Trash2 size={14} /> Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <button onClick={() => setResumeToDelete(resume._id)} className="absolute top-3 right-3 bg-white/80 dark:bg-slate-900/80 hover:bg-red-50 dark:hover:bg-red-500/20 text-slate-400 hover:text-red-500 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm transition-colors">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
 
-                {/* 🌟 FIX: Simplified Primary Action Buttons */}
                 <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div className="mb-4">
+                  <div className="mb-2">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white truncate" title={resume.title}>{resume.title}</h3>
-                    <p className="text-xs text-slate-500 mt-1">Edited: {new Date(resume.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                    <p className="text-xs text-slate-500 mt-1">Updated: {new Date(resume.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 mt-auto">
-                    <button onClick={() => navigate("/create-resume", { state: { importedData: resume } })} className="flex justify-center items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2.5 rounded-xl transition-colors">
+                  
+                  {/* RESTORED: 4 Button Grid Format */}
+                  <div className="grid grid-cols-2 gap-2 mt-auto pt-4">
+                    <button onClick={() => navigate("/create-resume", { state: { importedData: resume } })} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl transition-colors">
                       <Edit3 size={14} /> Edit
                     </button>
-                    <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl transition-colors shadow-sm">
-                      <Eye size={14} /> Preview
+                    <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl transition-colors shadow-sm">
+                      <Eye size={14} /> Download
+                    </button>
+                    <button onClick={() => navigate(`/analytics/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-2.5 rounded-xl transition-colors">
+                      <Sparkles size={14} /> Score
+                    </button>
+                    <button onClick={() => navigate(`/interview-prep/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 py-2.5 rounded-xl transition-colors">
+                      <MessageSquare size={14} /> Prep
                     </button>
                   </div>
                 </div>
