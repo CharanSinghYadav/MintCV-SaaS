@@ -237,9 +237,32 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* 🌟 FIX: Updated Delete Confirmation Modal */}
       {resumeToDelete && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 text-center space-y-6"><AlertTriangle className="mx-auto text-red-500" size={36} /><h3 className="text-xl font-bold text-white">Permanently delete?</h3><div className="flex gap-3"><button onClick={() => setResumeToDelete(null)} className="flex-1 bg-slate-800 text-slate-200 py-3 rounded-xl font-semibold text-sm">Cancel</button><button onClick={confirmDeleteResume} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl text-sm">Delete</button></div></div>
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-8 text-center space-y-4 shadow-2xl">
+            <AlertTriangle className="mx-auto text-red-500 mb-2" size={42} />
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-2">Permanently delete?</h3>
+              <p className="text-sm text-slate-400">
+                This action cannot be undone. This will permanently delete your resume and all associated AI interview data.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-4">
+              <button 
+                onClick={() => setResumeToDelete(null)} 
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-3.5 rounded-xl font-bold text-sm transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteResume} 
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg shadow-red-500/20 transition-all cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
