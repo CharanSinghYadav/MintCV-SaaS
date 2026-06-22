@@ -75,7 +75,7 @@ const InterviewPrep = () => {
   useEffect(() => {
     const fetchInterviewPrep = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/resume/interview-prep/${id}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/resume/interview-prep/${id}`, {
           withCredentials: true,
         });
         setPrepData(response.data.data);

@@ -15,7 +15,7 @@ const Register = () => {
     if (formData.password !== formData.confirmPassword) return toast.error("Passwords do not match!");
     const toastId = toast.loading("Creating your account...");
     try {
-      const response = await axios.post("http://localhost:3000/api/auth/register", formData);
+      const response = await axios.post(import.meta.env.VITE_API_URL + "/api/auth/register", formData);
       if (response.status === 201) {
         toast.success(response.data.message || "Account created successfully!", { id: toastId });
         setTimeout(() => navigate("/login"), 1500);

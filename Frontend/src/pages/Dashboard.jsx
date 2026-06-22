@@ -26,7 +26,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchMyResumes = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/resume/my-resumes", { withCredentials: true });
+        const response = await axios.get(import.meta.env.VITE_API_URL + "/api/resume/my-resumes", { withCredentials: true });
         setResumes(response.data.resumes);
       } catch (error) {
         toast.error("Failed to load your resumes.");
@@ -60,7 +60,7 @@ const Dashboard = () => {
     const toastId = toast.loading("AI is reading your PDF... ✨");
 
     try {
-      const response = await axios.post("http://localhost:3000/api/resume/upload", formData, {
+      const response = await axios.post(import.meta.env.VITE_API_URL + "/api/resume/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true
       });
@@ -84,7 +84,7 @@ const Dashboard = () => {
     setIsDeleting(true);
     const toastId = toast.loading("Moving to trash...");
     try {
-      await axios.delete(`http://localhost:3000/api/resume/delete/${resumeToDelete}`, { withCredentials: true });
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/resume/delete/${resumeToDelete}`, { withCredentials: true });
       setResumes((prev) => prev.filter((r) => r._id !== resumeToDelete));
       toast.success("Resume deleted!", { id: toastId });
     } catch (error) {

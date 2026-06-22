@@ -13,7 +13,7 @@ const EvaluateResume = () => {
   useEffect(() => {
     const fetchAIResult = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/resume/evaluate/${id}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/resume/evaluate/${id}`, {
           withCredentials: true
         });
         

@@ -16,7 +16,7 @@ const Login = () => {
     e.preventDefault();
     const toastId = toast.loading("Verifying credentials...");
     try {
-      const response = await axios.post("http://localhost:3000/api/auth/login", formData, { withCredentials: true });
+      const response = await axios.post(import.meta.env.VITE_API_URL + "/api/auth/login", formData, { withCredentials: true });
       if (response.status === 200) {
         toast.success(response.data.message || "Welcome back!", { id: toastId });
         setUser(response.data.user);

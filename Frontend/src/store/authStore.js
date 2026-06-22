@@ -16,7 +16,7 @@ export const useAuthStore = create((set) => ({
 
   checkAuth: async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/auth/get-me", {
+      const response = await axios.get(import.meta.env.VITE_API_URL + "/api/auth/get-me", {
         withCredentials: true,
       });
       set({ user: response.data.user, isAuthenticated: true, isCheckingAuth: false });

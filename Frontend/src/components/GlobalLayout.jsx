@@ -54,7 +54,7 @@ const GlobalLayout = ({ children }) => {
     setIsSubmitting(true);
     const toastId = toast.loading("Sending feedback...");
     try {
-      await axios.post("http://localhost:3000/api/feedback/submit", { type: feedbackType, message: feedbackMessage }, { withCredentials: true });
+      await axios.post(import.meta.env.VITE_API_URL + "/api/feedback/submit", { type: feedbackType, message: feedbackMessage }, { withCredentials: true });
       toast.success("Feedback sent! Thank you. 🎉", { id: toastId });
       setIsFeedbackModalOpen(false);
       setFeedbackMessage("");
@@ -69,7 +69,7 @@ const GlobalLayout = ({ children }) => {
   // 🌟 SECURE LOGOUT HANDLER
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:3000/api/auth/logout", { withCredentials: true });
+      await axios.get(import.meta.env.VITE_API_URL + "/api/auth/logout", { withCredentials: true });
       logout(); 
       toast.success("Logged out successfully! 👋");
       navigate("/login"); 
@@ -85,7 +85,7 @@ const GlobalLayout = ({ children }) => {
     const toastId = toast.loading("Generating secure bill...");
 
     try {
-      const orderRes = await axios.post("http://localhost:3000/api/payment/create-order", {}, { withCredentials: true });
+      const orderRes = await axios.post(import.meta.env.VITE_API_URL + "/api/payment/create-order", {}, { withCredentials: true });
       const order = orderRes.data.order;
 
       const options = {
@@ -99,7 +99,7 @@ const GlobalLayout = ({ children }) => {
         handler: async function (response) {
           const verifyToast = toast.loading("Verifying payment with bank...");
           try {
-            const res = await axios.post("http://localhost:3000/api/payment/verify", {
+            const res = await axios.post(import.meta.env.VITE_API_URL + "/api/payment/verify", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,

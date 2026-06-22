@@ -34,7 +34,7 @@ const Preview = () => {
     const fetchResumeData = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3000/api/resume/share/${id}`,
+          `${import.meta.env.VITE_API_URL}/api/resume/share/${id}`,
         );
         const fetchedResume = response.data.resume;
         if (fetchedResume) {
@@ -62,7 +62,7 @@ const Preview = () => {
     const toastId = toast.loading("Saving layout settings...");
     try {
       await axios.put(
-        `http://localhost:3000/api/resume/update/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/resume/update/${id}`,
         { layoutSettings: pdfSettings },
         { withCredentials: true },
       );

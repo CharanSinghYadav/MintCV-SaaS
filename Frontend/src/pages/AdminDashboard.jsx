@@ -30,9 +30,9 @@ const AdminDashboard = () => {
     const fetchAdminData = async () => {
       try {
         const [statsRes, usersRes, feedbacksRes] = await Promise.all([
-          axios.get("http://localhost:3000/api/admin/stats", { withCredentials: true }),
-          axios.get("http://localhost:3000/api/admin/users", { withCredentials: true }),
-          axios.get("http://localhost:3000/api/admin/feedbacks", { withCredentials: true })
+          axios.get(import.meta.env.VITE_API_URL + "/api/admin/stats", { withCredentials: true }),
+          axios.get(import.meta.env.VITE_API_URL + "/api/admin/users", { withCredentials: true }),
+          axios.get(import.meta.env.VITE_API_URL + "/api/admin/feedbacks", { withCredentials: true })
         ]);
 
         setStats(statsRes.data.stats);
@@ -51,7 +51,7 @@ const AdminDashboard = () => {
   const handleManageUser = async (userId, action) => {
     const toastId = toast.loading(`${action}ing user...`);
     try {
-      const res = await axios.post("http://localhost:3000/api/admin/manage", { userId, action }, { withCredentials: true });
+      const res = await axios.post(import.meta.env.VITE_API_URL + "/api/admin/manage", { userId, action }, { withCredentials: true });
       toast.success(res.data.message, { id: toastId });
       
       // Update local state to reflect changes instantly

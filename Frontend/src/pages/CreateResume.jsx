@@ -187,7 +187,7 @@ const CreateResume = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/resume/enhance",
+        import.meta.env.VITE_API_URL + "/api/resume/enhance",
         { text },
         { withCredentials: true },
       );
@@ -245,10 +245,10 @@ const CreateResume = () => {
         // ... (Baaki axios wala logic waisa hi rahega) ...
         let response;
         if (resumeData._id) {
-           response = await axios.put(`http://localhost:3000/api/resume/update/${resumeData._id}`, formattedData, { withCredentials: true });
+           response = await axios.put(`${import.meta.env.VITE_API_URL}/api/resume/update/${resumeData._id}`, formattedData, { withCredentials: true });
            toast.success("Resume updated!");
         } else {
-           response = await axios.post("http://localhost:3000/api/resume/create", formattedData, { withCredentials: true });
+           response = await axios.post(import.meta.env.VITE_API_URL + "/api/resume/create", formattedData, { withCredentials: true });
            toast.success("Resume created!");
            updateField("_id", response.data.resume._id);
         }

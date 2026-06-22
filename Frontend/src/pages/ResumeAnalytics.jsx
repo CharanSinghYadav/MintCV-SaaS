@@ -51,7 +51,7 @@ const ResumeAnalytics = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/resume/evaluate/${id}`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/resume/evaluate/${id}`, {
           withCredentials: true,
         });
         setAnalytics(response.data.evaluation);
