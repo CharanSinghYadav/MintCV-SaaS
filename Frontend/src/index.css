@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* 🌙 Enabing Class-based Dark Mode in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 🍃 MintCV Brand Theme Variables */
+@theme {
+  --color-mint-50: #ecfdf5;
+  --color-mint-100: #d1fae5;
+  --color-mint-500: #10b981; /* Primary Mint */
+  --color-mint-600: #059669; /* Hover Mint */
+}
+
+/* 🎨 Global Base Styles for Light/Dark Mode Transitions */
+@layer base {
+  body {
+    /* Light Mode Defaults */
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-800);
+    transition-property: color, background-color;
+    transition-duration: 300ms;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Dark Mode Overrides */
+  .dark body {
+    background-color: var(--color-slate-950);
+    color: var(--color-slate-200);
+  }
+
+  /* Smooth scrolling for the whole app */
+  html {
+    scroll-behavior: smooth;
+  }
+}

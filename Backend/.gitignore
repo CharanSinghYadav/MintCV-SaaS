@@ -1,0 +1,15 @@
+# Dependency folders
+node_modules/
+dist/
+build/
+
+# Secret Keys
+.env
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+
+# OS files
+.DS_Store
