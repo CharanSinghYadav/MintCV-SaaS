@@ -20,6 +20,7 @@ import {
     getPublicResume,
     enhanceResumeText,
     deleteResume,
+    getMyInterviews,
 } from "../controllers/resume.controller.js";
 import { checkAiLimit } from "../middlewares/subscription.middleware.js";
 import authUser from "../middlewares/auth.middleware.js";
@@ -90,5 +91,11 @@ resumeRouter.post("/enhance", authUser, checkAiLimit, enhanceResumeText);
  * @desc    Delete a resume document
  */
 resumeRouter.delete("/delete/:id", authUser, deleteResume);
+
+/**
+ * @route   GET
+ * @desc    get interview questions
+ */
+router.get("/my-interviews", authUser, getMyInterviews);
 
 export default resumeRouter;

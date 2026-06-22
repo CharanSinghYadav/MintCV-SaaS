@@ -5,7 +5,7 @@ import { useAuthStore } from "../store/authStore";
 import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import {
-  LayoutDashboard, Settings, Moon, Sun, Menu, X, LogOut, MessageSquarePlus, Send, Crown, Check, Zap, ShieldAlert
+  LayoutDashboard, Settings, Moon, Sun, Menu, X, LogOut, MessageSquarePlus, Send, Crown, Check, Zap, ShieldAlert, BrainCircuit
 } from "lucide-react";
 
 const GlobalLayout = ({ children }) => {
@@ -26,8 +26,10 @@ const GlobalLayout = ({ children }) => {
     initTheme();
   }, [initTheme]);
 
+  // 🌟 ADDED INTERVIEW VAULT TO NAVIGATION
   const navLinks = [
     { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
+    { name: "Interview Vault", path: "/interviews", icon: <BrainCircuit size={20} /> },
     { 
       name: "Give Feedback", 
       isAction: true, 
@@ -72,7 +74,6 @@ const GlobalLayout = ({ children }) => {
     }
   };
 
-  // 💳 RAZORPAY ENGINE (BULLETPROOF V2)
   const handleRazorpayCheckout = async () => {
     if (!window.Razorpay) return toast.error("Razorpay SDK failed to load. Please check your internet connection.");
     setIsCheckoutLoading(true);
@@ -84,11 +85,9 @@ const GlobalLayout = ({ children }) => {
 
       const rzpKeyId = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-      // 🔥 THE SHIELD: Pre-flight sanity checks before Razorpay SDK commits suicide
       if (!rzpKeyId || rzpKeyId.includes('"') || rzpKeyId.includes('{')) {
         toast.dismiss(toastId);
         toast.error("Frontend Config Error: Malformed Razorpay Public Key!");
-        console.error("🚨 RAZORPAY KEY EVALUATED AS:", rzpKeyId);
         setIsCheckoutLoading(false);
         return;
       }
@@ -124,7 +123,6 @@ const GlobalLayout = ({ children }) => {
             toast.error(err.response?.data?.message || "Payment Verification Failed", { id: verifyToast });
           }
         },
-        // 🔥 FIX: Casted explicitly to String to strip Zustand Proxy wrappers
         prefill: { 
           name: String(user?.username || "MintCV Member"), 
           email: String(user?.email || "member@mintcv.com") 
@@ -149,7 +147,6 @@ const GlobalLayout = ({ children }) => {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-hidden font-sans">
       
-      {/* 📱 MOBILE HEADER */}
       <div className="md:hidden fixed top-0 w-full h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 z-50">
         <div className="flex items-center h-full">
           <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-7 sm:h-8 object-contain drop-shadow-sm" />
@@ -164,7 +161,6 @@ const GlobalLayout = ({ children }) => {
         </div>
       </div>
 
-      {/* 🖥️ SIDEBAR */}
       <aside className={`fixed md:static top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 z-40 ${isMobileMenuOpen ? "translate-x-0 pt-16" : "-translate-x-full md:translate-x-0"}`}>
         <div className="hidden md:flex items-center gap-2 h-20 px-6 border-b border-slate-200 dark:border-slate-800">
           <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-8 object-contain" />
@@ -204,14 +200,12 @@ const GlobalLayout = ({ children }) => {
         </div>
       </aside>
 
-      {/* 📄 MAIN CONTENT AREA */}
       <main className="flex-1 h-full overflow-y-auto pt-16 md:pt-0 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
         {isWorkspace ? <div className="w-full h-full">{children}</div> : <div className="p-4 md:p-8 max-w-7xl mx-auto">{children}</div>}
       </main>
 
       {isMobileMenuOpen && <div className="fixed inset-0 bg-slate-900/50 z-30 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />}
 
-      {/* 🌟 THE GLOBAL PRO PAYWALL MODAL */}
       {isPaywallOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-8 shadow-2xl relative overflow-hidden">
@@ -262,7 +256,6 @@ const GlobalLayout = ({ children }) => {
         </div>
       )}
 
-      {/* 🌟 FEEDBACK MODAL */}
       {isFeedbackModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
