@@ -47,18 +47,23 @@ resumeRouter.post("/create", authUser, createResume);
 resumeRouter.get("/my-resumes", authUser, getUserResumes);
 
 /**
+ * @route   GET /api/resume/my-interviews
+ * @desc    Get interview questions for Vault
+ * @access  Private
+ */
+resumeRouter.get("/my-interviews", authUser, getMyInterviews);
+
+/**
  * @route   PUT /api/resume/update/:id
  * @desc    Kisi specific resume ko update karna
  * @access  Private
  */
-// Yaha ':id' ek variable (params) hai. Frontend iski jagah actual resume ID bhejega
 resumeRouter.put("/update/:id", authUser, updateResume);
 
 /**
  * @route   POST /api/resume/upload
  * @desc    Upload PDF, AI Extractor
  */
-// Yahan authUser ke theek baad checkAiLimit laga diya!
 resumeRouter.post("/upload", authUser, checkAiLimit, upload.single("resumeFile"), uploadResumeFile);
 
 /**
@@ -92,10 +97,5 @@ resumeRouter.post("/enhance", authUser, checkAiLimit, enhanceResumeText);
  */
 resumeRouter.delete("/delete/:id", authUser, deleteResume);
 
-/**
- * @route   GET
- * @desc    get interview questions
- */
-router.get("/my-interviews", authUser, getMyInterviews);
 
 export default resumeRouter;
