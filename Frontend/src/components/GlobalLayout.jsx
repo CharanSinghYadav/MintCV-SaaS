@@ -146,25 +146,34 @@ const GlobalLayout = ({ children }) => {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-hidden font-sans">
       
+      {/* Mobile Header */}
       <div className="md:hidden fixed top-0 w-full h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 z-50">
-        <div className="flex items-center h-full group cursor-pointer">
-          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-7 sm:h-8 object-contain drop-shadow-sm transition-transform duration-500 group-hover:scale-105" />
+        <div className="flex items-center h-full group cursor-pointer" onClick={() => navigate("/dashboard")}>
+          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-7 sm:h-8 object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-105" />
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
             {theme === "light" ? <Moon size={20} className="text-slate-600" /> : <Sun size={20} className="text-amber-400" />}
           </button>
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="cursor-pointer">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
       <aside className={`fixed md:static top-0 left-0 h-full w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-transform duration-300 z-40 ${isMobileMenuOpen ? "translate-x-0 pt-16" : "-translate-x-full md:translate-x-0"}`}>
-        {/* 🌟 FIX: Elegant Logo Animation */}
-        <div className="hidden md:flex items-center gap-2 h-20 px-6 border-b border-slate-200 dark:border-slate-800 group cursor-pointer relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"></div>
-          <img src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} alt="MintCV" className="h-8 object-contain transition-transform duration-500 group-hover:scale-105" />
+        
+        {/* 🌟 FIX: High-End Shimmer Sweep & Gentle Tilt Animation */}
+        <div 
+          onClick={() => navigate("/dashboard")}
+          className="hidden md:flex items-center gap-2 h-20 px-6 border-b border-slate-200 dark:border-slate-800 group cursor-pointer relative overflow-hidden select-none"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none transition-all"></div>
+          <img 
+            src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"} 
+            alt="MintCV" 
+            className="h-8 object-contain transition-all duration-300 group-hover:scale-105 group-hover:-rotate-1 drop-shadow-sm" 
+          />
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -174,7 +183,7 @@ const GlobalLayout = ({ children }) => {
                 <button
                   key={item.name}
                   onClick={item.onClick}
-                  className="flex w-full items-center gap-3 px-4 py-3 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium text-left"
+                  className="flex w-full items-center gap-3 px-4 py-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-medium text-left cursor-pointer"
                 >
                   {item.icon} {item.name}
                 </button>
@@ -183,7 +192,7 @@ const GlobalLayout = ({ children }) => {
 
             const isActive = location.pathname === item.path;
             return (
-              <Link key={item.name} to={item.path} onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${isActive ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"}`}>
+              <Link key={item.name} to={item.path} onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium cursor-pointer ${isActive ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm" : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-100"}`}>
                 {item.icon} {item.name}
               </Link>
             );
@@ -191,11 +200,11 @@ const GlobalLayout = ({ children }) => {
         </nav>
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-          <button onClick={toggleTheme} className="hidden md:flex w-full items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-colors">
+          <button onClick={toggleTheme} className="hidden md:flex w-full items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-colors cursor-pointer">
             <span className="font-medium">Dark Mode</span>
             {theme === "light" ? <Moon size={18} /> : <Sun size={18} className="text-amber-400" />}
           </button>
-          <button onClick={handleLogout} className="flex w-full items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium">
+          <button onClick={handleLogout} className="flex w-full items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium cursor-pointer">
             <LogOut size={20} /> Logout
           </button>
         </div>
@@ -211,7 +220,7 @@ const GlobalLayout = ({ children }) => {
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            <button onClick={closePaywall} className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors"><X size={22} /></button>
+            <button onClick={closePaywall} className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors cursor-pointer"><X size={22} /></button>
 
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 bg-gradient-to-tr from-amber-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
@@ -248,7 +257,7 @@ const GlobalLayout = ({ children }) => {
                 <span className="text-3xl font-extrabold text-white">₹199</span>
                 <span className="text-xs text-slate-400 ml-1.5">/ one-time</span>
               </div>
-              <button onClick={handleRazorpayCheckout} disabled={isCheckoutLoading} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold px-8 py-4 rounded-2xl text-base shadow-xl shadow-emerald-500/20 transition-all flex items-center gap-2">
+              <button onClick={handleRazorpayCheckout} disabled={isCheckoutLoading} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold px-8 py-4 rounded-2xl text-base shadow-xl shadow-emerald-500/20 transition-all flex items-center gap-2 cursor-pointer">
                 {isCheckoutLoading ? "Connecting Bank..." : <><Zap size={18} className="fill-slate-950" /> Pay & Upgrade Now</>}
               </button>
             </div>
@@ -260,7 +269,7 @@ const GlobalLayout = ({ children }) => {
       {isFeedbackModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
-            <button onClick={() => setIsFeedbackModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"><X size={20} /></button>
+            <button onClick={() => setIsFeedbackModalOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"><X size={20} /></button>
             <div className="mb-6">
               <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"><MessageSquarePlus className="text-emerald-500" /> Share Feedback</h3>
               <p className="text-sm text-slate-500 mt-1">Found a bug or have an idea? Let us know!</p>
@@ -270,7 +279,7 @@ const GlobalLayout = ({ children }) => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Feedback Type</label>
                 <div className="grid grid-cols-2 gap-3">
                   {["Suggestion", "Bug"].map((type) => (
-                    <button key={type} type="button" onClick={() => setFeedbackType(type)} className={`py-2 px-4 rounded-xl text-sm font-medium transition-colors border ${feedbackType === type ? "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"}`}>
+                    <button key={type} type="button" onClick={() => setFeedbackType(type)} className={`py-2 px-4 rounded-xl text-sm font-medium transition-colors border cursor-pointer ${feedbackType === type ? "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"}`}>
                       {type}
                     </button>
                   ))}
@@ -280,7 +289,7 @@ const GlobalLayout = ({ children }) => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Message</label>
                 <textarea value={feedbackMessage} onChange={(e) => setFeedbackMessage(e.target.value)} placeholder="Explain what happened or what you'd like to see..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500 outline-none resize-none h-32" required></textarea>
               </div>
-              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+              <button type="submit" disabled={isSubmitting} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
                 {isSubmitting ? <span className="animate-pulse">Sending...</span> : <><Send size={16} /> Submit Feedback</>}
               </button>
             </form>

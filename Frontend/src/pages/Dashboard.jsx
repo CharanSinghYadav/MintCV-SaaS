@@ -108,8 +108,9 @@ const Dashboard = () => {
       {/* Welcome Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
+          {/* 🌟 FIX: Consistent Brand Accent (Emerald instead of Indigo) */}
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Welcome back, <span className="text-indigo-600 dark:text-indigo-400">{formatName(user?.username)}</span> 👋
+            Welcome back, <span className="text-emerald-600 dark:text-emerald-400">{formatName(user?.username)}</span> 👋
           </h1>
           <p className="text-slate-500 mt-1">Create, evaluate and land your dream job.</p>
         </div>
@@ -119,7 +120,7 @@ const Dashboard = () => {
             <Crown size={18} className="animate-bounce" /> VIP PREMIUM ACTIVE
           </div>
         ) : (
-          <button onClick={openPaywall} className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all">
+          <button onClick={openPaywall} className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all cursor-pointer">
             <Zap size={16} /> Upgrade to Pro
           </button>
         )}
@@ -152,27 +153,29 @@ const Dashboard = () => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input type="text" placeholder="Search resumes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+              <input type="text" placeholder="Search resumes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
             </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-20"><div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>
+          <div className="flex justify-center items-center py-20"><div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <div className="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl min-h-[280px] flex flex-col justify-center items-center p-6 hover:border-indigo-500 transition-all text-center relative overflow-hidden group">
+            
+            {/* 🌟 FIX: Brand-aligned Create Box */}
+            <div className="bg-slate-50 dark:bg-slate-900/50 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl min-h-[280px] flex flex-col justify-center items-center p-6 hover:border-emerald-500 transition-all text-center relative overflow-hidden group">
               <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                <Plus size={28} className="text-indigo-500" />
+                <Plus size={28} className="text-emerald-500" />
               </div>
               <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Create Document</h3>
               <p className="text-xs text-slate-500 mb-6">Build from scratch or scan PDF</p>
 
               <div className="flex flex-col gap-3 w-full max-w-[200px] z-10">
-                <button onClick={() => handleInitiateCreate("blank")} className="w-full bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors">
+                <button onClick={() => handleInitiateCreate("blank")} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer">
                   <Plus size={16} /> Start Blank
                 </button>
-                <button onClick={() => handleInitiateCreate("import")} disabled={isUploading} className="w-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+                <button onClick={() => handleInitiateCreate("import")} disabled={isUploading} className="w-full bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 hover:bg-teal-100 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer">
                   {isUploading ? "Parsing..." : <><Sparkles size={16} /> Scan PDF (1/Day)</>}
                 </button>
                 <input type="file" accept="application/pdf" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
@@ -182,14 +185,15 @@ const Dashboard = () => {
             {resumes.filter((r) => r.title.toLowerCase().includes(searchQuery.toLowerCase())).map((resume) => (
               <div key={resume._id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-lg transition-all flex flex-col justify-between group relative">
                 
-                <div className="h-40 bg-slate-100 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 relative flex justify-center items-end overflow-hidden pt-4 transition-colors">
-                  <div className="w-32 h-36 bg-white dark:bg-slate-900 rounded-t-md shadow-md border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2 relative transform translate-y-3 group-hover:translate-y-1 transition-transform">
-                    <div className="text-center border-b border-slate-100 dark:border-slate-800 pb-1.5 truncate">
-                      <h4 className="text-[9px] font-bold text-slate-800 dark:text-slate-300 uppercase">{resume.title}</h4>
+                {/* 🌟 FIX: Popping Dark Mode Thumbnail Card */}
+                <div className="h-40 bg-slate-100 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 relative flex justify-center items-end overflow-hidden pt-4 transition-colors">
+                  <div className="w-32 h-36 bg-white dark:bg-slate-800 rounded-t-md shadow-lg border border-slate-200 dark:border-slate-600 p-3 flex flex-col gap-2 relative transform translate-y-3 group-hover:translate-y-1 transition-transform">
+                    <div className="text-center border-b border-slate-100 dark:border-slate-700 pb-1.5 truncate">
+                      <h4 className="text-[9px] font-bold text-slate-800 dark:text-slate-200 uppercase">{resume.title}</h4>
                     </div>
                     <div className="flex flex-col gap-1.5 opacity-60">
-                      <div className="w-full h-[3px] bg-slate-300 dark:bg-slate-600 rounded-full"></div>
-                      <div className="w-5/6 h-[3px] bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+                      <div className="w-full h-[3px] bg-slate-300 dark:bg-slate-500 rounded-full"></div>
+                      <div className="w-5/6 h-[3px] bg-slate-200 dark:bg-slate-600 rounded-full"></div>
                     </div>
                   </div>
                   
@@ -199,7 +203,7 @@ const Dashboard = () => {
                     </div>
                   )}
 
-                  <button onClick={() => setResumeToDelete(resume._id)} className="absolute top-3 right-3 bg-white/80 dark:bg-slate-900/80 hover:bg-red-50 dark:hover:bg-red-500/20 text-slate-400 hover:text-red-500 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm transition-colors">
+                  <button onClick={() => setResumeToDelete(resume._id)} className="absolute top-3 right-3 bg-white/80 dark:bg-slate-900/80 hover:bg-red-50 dark:hover:bg-red-500/20 text-slate-400 hover:text-red-500 p-1.5 rounded-full border border-slate-200 dark:border-slate-700 backdrop-blur-sm transition-colors cursor-pointer">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -210,18 +214,18 @@ const Dashboard = () => {
                     <p className="text-xs text-slate-500 mt-1">Updated: {new Date(resume.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
                   </div>
                   
-                  {/* RESTORED: 4 Button Grid Format */}
+                  {/* 🌟 FIX: UX-Corrected Button Grid (Eye icon = 'View') */}
                   <div className="grid grid-cols-2 gap-2 mt-auto pt-4">
-                    <button onClick={() => navigate("/create-resume", { state: { importedData: resume } })} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl transition-colors">
+                    <button onClick={() => navigate("/create-resume", { state: { importedData: resume } })} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2.5 rounded-xl transition-colors cursor-pointer">
                       <Edit3 size={14} /> Edit
                     </button>
-                    <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl transition-colors shadow-sm">
-                      <Eye size={14} /> Download
+                    <button onClick={() => navigate(`/preview/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer">
+                      <Eye size={14} /> View
                     </button>
-                    <button onClick={() => navigate(`/analytics/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-2.5 rounded-xl transition-colors">
+                    <button onClick={() => navigate(`/analytics/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 py-2.5 rounded-xl transition-colors cursor-pointer">
                       <Sparkles size={14} /> Score
                     </button>
-                    <button onClick={() => navigate(`/interview-prep/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 py-2.5 rounded-xl transition-colors">
+                    <button onClick={() => navigate(`/interview-prep/${resume._id}`)} className="flex justify-center items-center gap-1.5 text-[11px] font-bold bg-teal-50 hover:bg-teal-100 dark:bg-teal-500/10 dark:hover:bg-teal-500/20 text-teal-600 dark:text-teal-400 py-2.5 rounded-xl transition-colors cursor-pointer">
                       <MessageSquare size={14} /> Prep
                     </button>
                   </div>

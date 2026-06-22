@@ -22,6 +22,12 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 
+  @keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
   /* Dark Mode Overrides */
   .dark body {
     background-color: var(--color-slate-950);
