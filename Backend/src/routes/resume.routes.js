@@ -76,7 +76,7 @@ resumeRouter.get("/evaluate/:id", authUser, checkAiLimit, evaluateResume);
  * @route   GET /api/resume/interview-prep/:id
  * @desc    AI Interview Questions
  */
-resumeRouter.get("/interview-prep/:id", authUser, checkAiLimit, generateInterviewPrep);
+resumeRouter.get("/interview-prep/:id", authUser, generateInterviewPrep);
 
 /**
  * @route   GET /api/resume/share/:id

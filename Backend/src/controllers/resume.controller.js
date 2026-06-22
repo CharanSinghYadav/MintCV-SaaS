@@ -1,18 +1,9 @@
 /*
 ========================================================
-FILE PURPOSE: resume.controller.js
+FILE PURPOSE: resume.controller.js (SECURE WIRE-SLICING V2 & INLINE BOUNCER)
 ========================================================
-Ye file Resume ke saare kaam (CRUD, AI, aur File Upload) handle karti hai.
-Ye file Resume ke saare CRUD operations handle karti hai.
-C - Create (Naya resume banana)
-R - Read (Apne resumes dekhna)
-U - Update (Resume me changes karna)
-D - Delete (Resume delete karna)
-========================================================
-*/
-/*
-========================================================
-FILE PURPOSE: resume.controller.js (SECURE WIRE-SLICING V2)
+Ye file Resume ke saare CRUD operations, File Upload, 
+aur AI feature triggers handle karti hai.
 ========================================================
 */
 
@@ -110,7 +101,7 @@ export const evaluateResume = async (req, res) => {
 };
 
 // ============================================================================
-// 🤖 INTERVIEW PREP (THE BULLETPROOF SERVER-SIDE WIRE SLICER)
+// 🤖 INTERVIEW PREP (THE BULLETPROOF SERVER-SIDE WIRE SLICER + INLINE BOUNCER)
 // ============================================================================
 export const generateInterviewPrep = async (req, res) => {
   try {
@@ -126,16 +117,43 @@ export const generateInterviewPrep = async (req, res) => {
 
     // GATEWAY 1: Check Master Cache in DB
     if (resume.interviewPrepCache?.questionsList?.length > 0) {
-      console.log("⚡ Serving Interview Master Cache from MongoDB!");
+      console.log("⚡ Serving Interview Master Cache from MongoDB! (Bypassing AI Limits)");
       masterPrepData = resume.interviewPrepCache;
     } else {
-      // GATEWAY 2: Generate Fresh 10 Questions via AI (ALWAYS build 10 for the DB cache!)
-      console.log("🤖 Generating fresh 10 Master Questions for DB storage...");
+      // 🌟 THE INLINE BOUNCER: Triggered ONLY if we actually need to use AI
+      if (!isPremiumUser) {
+        const userCheck = await User.findById(req.user.id || req.user._id);
+        
+        const today = new Date().toDateString();
+        // Safe check for lastAiUsageDate to prevent crash if it's null initially
+        const lastUsageDate = userCheck.lastAiUsageDate ? new Date(userCheck.lastAiUsageDate).toDateString() : null;
+
+        // Reset if it's a new day
+        if (today !== lastUsageDate) {
+            userCheck.dailyAiUsageCount = 0;
+            userCheck.lastAiUsageDate = Date.now();
+            await userCheck.save();
+        }
+
+        // Limit Check (Free user gets 1 hit per day across all features)
+        if (userCheck.dailyAiUsageCount >= 1) {
+            return res.status(403).json({
+                success: false,
+                message: "You have reached your daily limit of 1 AI request. Please upgrade to Premium.",
+                requiresUpgrade: true 
+            });
+        }
+      }
+
+      // GATEWAY 2: Generate Fresh 10 Questions via AI
+      console.log("🤖 Cache Missed. Generating fresh 10 Master Questions for DB storage...");
       // Pass 'true' to AI service to force generating 10 hard scenario questions
       const aiGeneratedPrep = await generateInterviewQuestionsWithAI(resume.toObject(), true); 
       
       await Resume.findByIdAndUpdate(id, { interviewPrepCache: aiGeneratedPrep });
       masterPrepData = aiGeneratedPrep;
+      
+      // Hit the AI Meter since we consumed API credits
       await tickUserAiMeter(req.user.id || req.user._id);
     }
 
@@ -153,7 +171,7 @@ export const generateInterviewPrep = async (req, res) => {
       isCached: Boolean(resume.interviewPrepCache), 
       isPremiumView: isPremiumUser, 
       totalAvailableQuestions: masterPrepData.questionsList.length,
-      prep: responsePrepPayload // <-- Name changed to 'prep'
+      prep: responsePrepPayload 
     });
 
   } catch (error) {
@@ -241,7 +259,6 @@ export const deleteResume = async (req, res) => {
 
 export const getMyInterviews = async (req, res) => {
   try {
-    // 1. Un saare resumes ko dhoondo jinme interviewPrepCache null nahi hai
     const resumes = await Resume.find({
       user: req.user.id || req.user._id,
       interviewPrepCache: { $ne: null }
@@ -249,7 +266,6 @@ export const getMyInterviews = async (req, res) => {
 
     const isPremiumUser = req.user?.plan === "premium" || req.user?.plan === "PRO" || req.user?.role === "admin";
 
-    // 2. Wire-slice data for frontend
     const vault = resumes.map(res => {
       const prep = res.interviewPrepCache;
       const allQuestions = prep.questionsList || [];
@@ -259,7 +275,6 @@ export const getMyInterviews = async (req, res) => {
         updatedAt: res.updatedAt,
         role: prep.role || "Software Engineer",
         totalQuestions: allQuestions.length,
-        // Free user ko sirf length dikhegi, par network pe actual array sirf 3 item ka aayega!
         previewQuestions: isPremiumUser ? allQuestions : allQuestions.slice(0, 3) 
       };
     });
