@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
-import { BrainCircuit, Play, Lock, ChevronRight, Crown } from "lucide-react";
+import { BrainCircuit, Play, Lock, Crown } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 const InterviewLibrary = () => {
@@ -39,7 +39,7 @@ const InterviewLibrary = () => {
   }
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="w-full space-y-8 animate-in fade-in duration-500 pb-12 transition-colors duration-300">
       <Toaster position="top-right" />
 
       {/* HEADER BAR */}
@@ -48,12 +48,15 @@ const InterviewLibrary = () => {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             Interview Vault <BrainCircuit className="text-indigo-500" />
           </h1>
-          <p className="text-slate-500 mt-1">Your lifetime library of customized technical scenarios.</p>
+          <p className="text-slate-500 mt-1 text-xs md:text-sm">Your lifetime library of customized technical scenarios.</p>
         </div>
         
         {!isPremium && (
-          <button onClick={openPaywall} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 px-4 py-2.5 rounded-2xl font-bold text-sm shadow-md hover:scale-105 transition-all">
-            <Crown size={16} /> Unlock Full Vault
+          <button 
+            onClick={openPaywall} 
+            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-5 py-2.5 rounded-2xl font-black text-xs md:text-sm shadow-lg shadow-amber-500/15 hover:scale-105 transition-all cursor-pointer"
+          >
+            <Crown size={18} className="fill-slate-950" /> Unlock Full Vault (₹199)
           </button>
         )}
       </div>
@@ -61,10 +64,13 @@ const InterviewLibrary = () => {
       {/* CONTENT AREA */}
       {vaultData.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center shadow-sm">
-          <BrainCircuit size={48} className="mx-auto text-slate-300 dark:text-slate-700 mb-4" />
+          <BrainCircuit size={52} className="mx-auto text-slate-300 dark:text-slate-700 mb-4 animate-pulse" />
           <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Your vault is empty</h3>
-          <p className="text-sm text-slate-500 mt-2 mb-6">Generate interview questions from your Dashboard to build your library.</p>
-          <button onClick={() => navigate("/dashboard")} className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-6 rounded-xl text-sm transition-all">
+          <p className="text-xs md:text-sm text-slate-500 mt-2 mb-6 max-w-md mx-auto">Generate interview questions from your Dashboard workspace to automatically compile your AI scenario library.</p>
+          <button 
+            onClick={() => navigate("/dashboard")} 
+            className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-2xl text-xs md:text-sm shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all cursor-pointer"
+          >
             Go to Dashboard
           </button>
         </div>
@@ -74,46 +80,52 @@ const InterviewLibrary = () => {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              key={set.resumeId} 
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              transition={{ delay: index * 0.05 }}
+              key={set.resumeId || index} 
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden"
             >
+              {/* Subtle top-card accent glow */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1 rounded-full uppercase tracking-widest">
+                  <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-1 rounded-full uppercase tracking-widest">
                     Set {index + 1}
                   </span>
-                  <span className="text-xs text-slate-400 font-medium">
-                    {new Date(set.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  <span className="text-xs text-slate-400 font-semibold">
+                    {set.updatedAt ? new Date(set.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Recently"}
                   </span>
                 </div>
                 
-                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1 truncate">
-                  {set.title}
+                <h3 className="text-lg font-extrabold text-slate-800 dark:text-slate-100 mb-1 truncate tracking-tight">
+                  {set.title || "Untitled Document"}
                 </h3>
-                <p className="text-sm font-semibold text-slate-500 capitalize mb-6 truncate">
-                  Role: {set.role}
+                <p className="text-xs font-bold text-slate-400 capitalize mb-6 truncate block">
+                  Target Profile: <span className="text-slate-600 dark:text-slate-300">{set.role || "Professional"}</span>
                 </p>
 
                 {/* Progress Mini-Bar */}
-                <div className="bg-slate-50 dark:bg-slate-950/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800/80 mb-6">
-                  <div className="flex items-center justify-between text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    <span>{isPremium ? set.totalQuestions : set.previewQuestions.length} / {set.totalQuestions} Questions</span>
-                    {!isPremium && <Lock size={14} className="text-amber-500" />}
+                <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl p-4 border border-slate-100 dark:border-slate-800/80 mb-6">
+                  <div className="flex items-center justify-between text-xs font-black text-slate-700 dark:text-slate-300 mb-2">
+                    <span>{isPremium ? (set.totalQuestions || 0) : (set.previewQuestions?.length || 0)} / {set.totalQuestions || 10} Decrypted</span>
+                    {!isPremium && <Lock size={14} className="text-amber-500 shrink-0" />}
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5">
-                    <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: isPremium ? '100%' : '30%' }}></div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
+                      style={{ width: isPremium ? '100%' : '30%' }}
+                    ></div>
                   </div>
-                  {!isPremium && <p className="text-[10px] text-slate-400 mt-2">7 locked. Upgrade to decrypt.</p>}
+                  {!isPremium && <p className="text-[10px] font-bold text-slate-400 mt-2.5 block">🔒 7 Advanced FAANG Traps Paywalled</p>}
                 </div>
               </div>
 
               <button 
                 onClick={() => navigate(`/interview-prep/${set.resumeId}`)}
-                className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold py-3 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-indigo-600 text-white dark:bg-white dark:text-slate-900 dark:hover:bg-indigo-500 dark:hover:text-white font-extrabold py-3.5 rounded-2xl transition-all shadow-md text-xs md:text-sm cursor-pointer group-hover:scale-[1.02]"
               >
-                <Play size={16} className={!isPremium ? "text-amber-400" : ""} /> 
-                Start Mock Interview
+                <Play size={16} className={!isPremium ? "text-amber-400 fill-amber-400 group-hover:text-white group-hover:fill-white transition-colors" : "fill-current"} /> 
+                Launch Mock Session
               </button>
             </motion.div>
           ))}

@@ -6,7 +6,6 @@ Ye file Resume ke saare CRUD operations, File Upload,
 aur AI feature triggers handle karti hai.
 ========================================================
 */
-
 import { Resume } from "../models/resume.model.js";
 import { User } from "../models/user.model.js";
 import fs from "fs";
@@ -19,7 +18,6 @@ import {
   enhanceTextWithAI,
 } from "../services/ai.services.js";
 
-// 🌟 FIX: Dynamic ticker accepts the specific field to increment
 const tickUserAiMeter = async (userId, fieldToIncrement) => {
   if (!userId || !fieldToIncrement) return;
   try {
@@ -77,9 +75,6 @@ export const updateResume = async (req, res) => {
   }
 };
 
-// ============================================
-// 📊 EVALUATE RESUME 
-// ============================================
 export const evaluateResume = async (req, res) => {
   try {
     const { id } = req.params;
@@ -88,14 +83,10 @@ export const evaluateResume = async (req, res) => {
 
     let evaluationResult;
 
-    // 🌟 FIX: THE AI FALLBACK SHIELD FOR ATS
     try {
-        // Step 1: AI Try karega dynamically evaluate karna
         evaluationResult = await evaluateResumeWithAI(resume.toObject());
     } catch (aiError) {
         console.warn("⚠️ ATS AI Failed (Likely Unstructured/Non-Standard Resume). Injecting Emergency Scorecard.");
-        
-        // Step 2: Universal Emergency Fallback ATS Scorecard
         evaluationResult = {
             atsScore: 35,
             feedback: "We couldn't fully analyze the structure of this document. It might lack standard headings, quantifiable metrics, or industry-specific keywords.",
@@ -108,20 +99,16 @@ export const evaluateResume = async (req, res) => {
         };
     }
 
-    // Step 3: Result save karo
     if (evaluationResult?.atsScore) {
       await Resume.findByIdAndUpdate(id, { lastAtsScore: evaluationResult.atsScore });
     }
     
-    // 🌟 FIX: Granular Tick
     await tickUserAiMeter(req.user.id || req.user._id, "dailyAtsCount");
 
     return res.status(200).json({ message: "Resume evaluated successfully", evaluation: evaluationResult });
     
   } catch (error) {
     console.error("Controller Execution Error:", error);
-    
-    // API limit exhaustion catch
     if (error.statusCode === 429) {
       return res.status(429).json({
         success: false,
@@ -129,14 +116,12 @@ export const evaluateResume = async (req, res) => {
         isAiOverloaded: true
       });
     }
-    
-    // Hard crash fallback
     return res.status(500).json({ success: false, message: error.message || "Internal server error occurred." });
   }
 };
 
 // ============================================================================
-// 🤖 INTERVIEW PREP (WITH UNIVERSAL AI FALLBACK SHIELD)
+// 🤖 INTERVIEW PREP (WITH ABSOLUTE DB OVERRIDE)
 // ============================================================================
 export const generateInterviewPrep = async (req, res) => {
   try {
@@ -145,7 +130,10 @@ export const generateInterviewPrep = async (req, res) => {
 
     if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
 
-    const isPremiumUser = req.user?.plan === "premium" || req.user?.plan === "PRO" || req.user?.role === "admin";
+    // 🌟 FIX: Fetch the actual user from MongoDB to override stale JWT cookies instantly
+    const liveUser = await User.findById(req.user.id || req.user._id);
+    const isPremiumUser = liveUser?.plan === "premium" || liveUser?.plan === "PRO" || liveUser?.role === "admin";
+    
     let masterPrepData = null;
 
     if (resume.interviewPrepCache?.questionsList?.length > 0) {
@@ -154,19 +142,18 @@ export const generateInterviewPrep = async (req, res) => {
     } else {
       
       if (!isPremiumUser) {
-        const userCheck = await User.findById(req.user.id || req.user._id);
         const today = new Date().toDateString();
-        const lastUsageDate = userCheck.lastAiUsageDate ? new Date(userCheck.lastAiUsageDate).toDateString() : null;
+        const lastUsageDate = liveUser.lastAiUsageDate ? new Date(liveUser.lastAiUsageDate).toDateString() : null;
 
         if (today !== lastUsageDate) {
-            userCheck.dailyPdfCount = 0;
-            userCheck.dailyAtsCount = 0;
-            userCheck.dailyMockCount = 0;
-            userCheck.lastAiUsageDate = Date.now();
-            await userCheck.save();
+            liveUser.dailyPdfCount = 0;
+            liveUser.dailyAtsCount = 0;
+            liveUser.dailyMockCount = 0;
+            liveUser.lastAiUsageDate = Date.now();
+            await liveUser.save();
         }
 
-        if (userCheck.dailyMockCount >= 3) {
+        if (liveUser.dailyMockCount >= 3) {
             return res.status(403).json({
                 success: false,
                 message: "You have reached your daily limit of 3 AI Mock Generations. Please upgrade to Premium.",
@@ -177,32 +164,29 @@ export const generateInterviewPrep = async (req, res) => {
 
       console.log("🤖 Cache Missed. Requesting AI...");
       
-      // 🌟 FIX: THE AI FALLBACK SHIELD
       try {
           masterPrepData = await generateInterviewQuestionsWithAI(resume.toObject(), true);
       } catch (aiError) {
-          console.warn("⚠️ AI Generation Failed (Likely Empty/Non-Tech Resume). Injecting Universal Fallback Set.");
-          
-          // Universal Fallback Set (10 Questions Total)
+          console.warn("⚠️ AI Generation Failed. Injecting Universal Fallback Set.");
           masterPrepData = {
               role: "Professional Candidate",
               questionsList: [
-                  { id: 1, difficulty: "Easy", question: "Walk me through your resume and highlight your most significant professional achievement.", expectedAnswer: "Focus on impact, structure your answer using the STAR method, and tie your achievement back to the role." },
-                  { id: 2, difficulty: "Medium", question: "Describe a time you faced a significant challenge in a project. How did you handle it?", expectedAnswer: "Discuss your problem-solving approach, collaboration, and what you learned from the failure or roadblock." },
-                  { id: 3, difficulty: "Medium", question: "How do you prioritize tasks when you have multiple tight deadlines?", expectedAnswer: "Mention tools/frameworks you use (Eisenhower Matrix, Agile), communication with stakeholders, and adaptability." },
-                  { id: 4, difficulty: "Hard", question: "Tell me about a time you had a conflict with a team member or manager.", expectedAnswer: "Focus on professional resolution, active listening, and compromising for the project's benefit." },
-                  { id: 5, difficulty: "Medium", question: "Where do you see your career progressing in the next 3 to 5 years?", expectedAnswer: "Show ambition but keep it realistic and aligned with the company's growth path." },
-                  { id: 6, difficulty: "Easy", question: "What is your preferred working style (independent vs team-based)?", expectedAnswer: "Highlight flexibility. Emphasize ability to focus deeply alone, but collaborate effectively." },
-                  { id: 7, difficulty: "Hard", question: "Describe a time you had to learn a completely new skill or tool very quickly.", expectedAnswer: "Show adaptability, your learning methodology, and the successful outcome." },
-                  { id: 8, difficulty: "Medium", question: "How do you handle constructive criticism?", expectedAnswer: "Acknowledge it as a growth opportunity, don't take it personally, and explain how you implement feedback." },
-                  { id: 9, difficulty: "Medium", question: "What motivates you to perform at your best?", expectedAnswer: "Align personal motivation with solving problems, helping the team, or company mission." },
-                  { id: 10, difficulty: "Easy", question: "Why should we hire you over other qualified candidates?", expectedAnswer: "Summarize your unique mix of hard skills, soft skills, and cultural fit for the specific team." }
+                  { id: 1, difficulty: "Easy", question: "Walk me through your resume and highlight your most significant professional achievement.", expectedAnswer: "Focus on impact, structure your answer using the STAR method." },
+                  { id: 2, difficulty: "Medium", question: "Describe a time you faced a significant challenge in a project. How did you handle it?", expectedAnswer: "Discuss your problem-solving approach and collaboration." },
+                  { id: 3, difficulty: "Medium", question: "How do you prioritize tasks when you have multiple tight deadlines?", expectedAnswer: "Mention tools/frameworks you use (Eisenhower Matrix, Agile)." },
+                  { id: 4, difficulty: "Hard", question: "Tell me about a time you had a conflict with a team member or manager.", expectedAnswer: "Focus on professional resolution and active listening." },
+                  { id: 5, difficulty: "Medium", question: "Where do you see your career progressing in the next 3 to 5 years?", expectedAnswer: "Show ambition but keep it realistic." },
+                  { id: 6, difficulty: "Easy", question: "What is your preferred working style (independent vs team-based)?", expectedAnswer: "Highlight flexibility." },
+                  { id: 7, difficulty: "Hard", question: "Describe a time you had to learn a completely new skill or tool very quickly.", expectedAnswer: "Show adaptability and your learning methodology." },
+                  { id: 8, difficulty: "Medium", question: "How do you handle constructive criticism?", expectedAnswer: "Acknowledge it as a growth opportunity." },
+                  { id: 9, difficulty: "Medium", question: "What motivates you to perform at your best?", expectedAnswer: "Align personal motivation with solving problems." },
+                  { id: 10, difficulty: "Easy", question: "Why should we hire you over other qualified candidates?", expectedAnswer: "Summarize your unique mix of hard and soft skills." }
               ]
           };
       }
       
       await Resume.findByIdAndUpdate(id, { interviewPrepCache: masterPrepData });
-      await tickUserAiMeter(req.user.id || req.user._id, "dailyMockCount");
+      await tickUserAiMeter(liveUser._id, "dailyMockCount");
     }
 
     const responsePrepPayload = {
@@ -247,7 +231,6 @@ export const uploadResumeFile = async (req, res) => {
 
     if (!cloudinaryResult) throw new Error("Cloudinary upload failed.");
 
-    // 🌟 FIX: Granular Tick
     await tickUserAiMeter(req.user.id || req.user._id, "dailyPdfCount");
 
     return res.status(200).json({
@@ -286,7 +269,6 @@ export const enhanceResumeText = async (req, res) => {
     if (!text || text.trim().length < 5) return res.status(400).json({ message: "Text too short" });
 
     const enhancedText = await enhanceTextWithAI(text);
-    // Lifetime only, as feature is already premium locked
     await tickUserAiMeter(req.user.id || req.user._id, "lifetimeAiUsage"); 
     return res.status(200).json({ message: "Success", enhancedText });
   } catch (error) {
@@ -305,14 +287,21 @@ export const deleteResume = async (req, res) => {
   }
 };
 
+// ============================================================================
+// 📁 GET MY INTERVIEWS VAULT (WITH ABSOLUTE DB OVERRIDE)
+// ============================================================================
 export const getMyInterviews = async (req, res) => {
   try {
+    const safeUserId = req.user.id || req.user._id;
+    
+    // 🌟 FIX: Never trust the cookie for Vault decryption. Query MongoDB directly!
+    const liveUser = await User.findById(safeUserId); 
+    const isPremiumUser = liveUser?.plan === "premium" || liveUser?.plan === "PRO" || liveUser?.role === "admin";
+
     const resumes = await Resume.find({
-      user: req.user.id || req.user._id,
+      user: safeUserId,
       interviewPrepCache: { $ne: null }
     }).sort({ updatedAt: -1 }).select('title interviewPrepCache updatedAt');
-
-    const isPremiumUser = req.user?.plan === "premium" || req.user?.plan === "PRO" || req.user?.role === "admin";
 
     const vault = resumes.map(res => {
       const prep = res.interviewPrepCache;

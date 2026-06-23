@@ -8,6 +8,13 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+const cookieOptions = {
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === "production", 
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
+};
+
 // =================================================================
 // 1. CREATE ORDER
 // =================================================================
@@ -15,7 +22,6 @@ export const createPremiumOrder = async (req, res) => {
     try {
         const PREMIUM_PRICE = 199; 
 
-        // 🔥 SAFETY SHIELD: Ensure ID is strictly a primitive String
         const safeUserId = String(req.user?.id || req.user?._id || "unknown");
 
         const options = {
@@ -42,7 +48,7 @@ export const createPremiumOrder = async (req, res) => {
 };
 
 // =================================================================
-// 2. VERIFY PAYMENT
+// 2. VERIFY PAYMENT (WITH CROSS-ORIGIN SECURE COOKIE OVERWRITE)
 // =================================================================
 export const verifyPremiumPayment = async (req, res) => {
     try {
@@ -64,6 +70,7 @@ export const verifyPremiumPayment = async (req, res) => {
         const safeUserId = String(req.user?.id || req.user?._id);
         const user = await User.findById(safeUserId);
         
+        // Ensure standard casing in DB
         user.plan = "premium";
         user.razorpayPaymentId = razorpay_payment_id;
         await user.save();
@@ -77,7 +84,9 @@ export const verifyPremiumPayment = async (req, res) => {
         });
 
         const newToken = user.generateToken();
-        res.cookie("token", newToken);
+        
+        // 🌟 FIX: Injecting the strict cross-origin cookieOptions!
+        res.cookie("token", newToken, cookieOptions);
 
         return res.status(200).json({
             success: true,
