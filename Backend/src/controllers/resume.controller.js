@@ -120,18 +120,21 @@ export const evaluateResume = async (req, res) => {
   }
 };
 
-// ============================================================================
-// 🤖 INTERVIEW PREP (WITH ABSOLUTE DB OVERRIDE)
-// ============================================================================
 export const generateInterviewPrep = async (req, res) => {
   try {
     const { id } = req.params;
-    const resume = await Resume.findById(id);
+    const safeUserId = req.user.id || req.user._id;
 
-    if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
+    const resume = await Resume.findOne({ _id: id, user: safeUserId });
 
-    // 🌟 FIX: Fetch the actual user from MongoDB to override stale JWT cookies instantly
-    const liveUser = await User.findById(req.user.id || req.user._id);
+    if (!resume) {
+        return res.status(404).json({ 
+            success: false, 
+            message: "Document missing or you are unauthorized to access this workspace." 
+        });
+    }
+
+    const liveUser = await User.findById(safeUserId);
     const isPremiumUser = liveUser?.plan === "premium" || liveUser?.plan === "PRO" || liveUser?.role === "admin";
     
     let masterPrepData = null;
@@ -185,7 +188,11 @@ export const generateInterviewPrep = async (req, res) => {
           };
       }
       
-      await Resume.findByIdAndUpdate(id, { interviewPrepCache: masterPrepData });
+      await Resume.findOneAndUpdate(
+         { _id: id, user: safeUserId }, 
+         { interviewPrepCache: masterPrepData }
+      );
+
       await tickUserAiMeter(liveUser._id, "dailyMockCount");
     }
 
