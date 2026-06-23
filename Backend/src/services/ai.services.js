@@ -149,7 +149,7 @@ export const extractResumeDataWithAI = async (rawPdfText) => {
 
         const response = await executeWithRetry(async () => {
             return await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 contents: promptText,
                 config: {
                     responseMimeType: "application/json",
@@ -209,7 +209,7 @@ export const evaluateResumeWithAI = async (resumeData) => {
 
         return await executeWithRetry(async () => {
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 contents: promptText,
                 config: {
                     responseMimeType: "application/json",
@@ -281,7 +281,7 @@ export const generateInterviewQuestionsWithAI = async (resumeData, isPremium = f
 
         return await executeWithRetry(async () => {
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 contents: promptText,
                 config: {
                     responseMimeType: "application/json",
@@ -316,7 +316,7 @@ export const enhanceTextWithAI = async (text) => {
 
         const response = await executeWithRetry(async () => {
             return await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 contents: promptText,
             });
         });
