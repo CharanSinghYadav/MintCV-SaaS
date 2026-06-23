@@ -235,6 +235,7 @@ const Preview = () => {
         <div className="hidden lg:flex flex-1 bg-slate-950/50 p-8 items-center justify-center">
           <div className="w-full h-full max-w-[210mm] shadow-2xl bg-white">
             <PDFViewer
+              key={JSON.stringify(pdfSettings)}
               width="100%"
               height="100%"
               className="border-none"
@@ -269,6 +270,7 @@ const Preview = () => {
             </div>
             <div className="flex-1 bg-slate-200 dark:bg-slate-800 relative overflow-hidden">
               <PDFViewer
+                key={JSON.stringify(pdfSettings)}
                 width="100%"
                 height="100%"
                 className="border-none"
