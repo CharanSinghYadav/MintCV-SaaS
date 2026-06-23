@@ -1,13 +1,13 @@
-import { useState, memo, useMemo } from "react";
+import { useState, memo, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PDFViewer } from "@react-pdf/renderer";
 import ResumePDF from "../components/ResumePDF";
 import useDebounce from "../hooks/useDebounce";
 import { useResumeStore } from "../store/resumeStore";
+import { useAuthStore } from "../store/authStore"; // 🌟 ADDED AUTH STORE IMPORT
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import { useEffect } from "react";
 import {
   User,
   Briefcase,
@@ -25,6 +25,7 @@ import {
   X,
   Sparkles,
   Edit3,
+  Crown // 🌟 ADDED CROWN ICON
 } from "lucide-react";
 
 const AccordionSection = ({
@@ -38,7 +39,7 @@ const AccordionSection = ({
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm transition-all mb-4">
       <button
         onClick={onClick}
-        className={`w-full flex items-center justify-between p-5 text-left transition-colors ${
+        className={`w-full flex items-center justify-between p-5 text-left transition-colors cursor-pointer ${
           isActive
             ? "bg-emerald-50/50 dark:bg-emerald-500/10"
             : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -97,6 +98,7 @@ const MemoizedPDFView = memo(({ data, settings }) => {
 
 const CreateResume = () => {
   const navigate = useNavigate();
+  const { user, openPaywall } = useAuthStore(); // 🌟 GET USER & PAYWALL FUNC
   const {
     resumeData,
     updateField,
@@ -108,22 +110,13 @@ const CreateResume = () => {
   } = useResumeStore();
 
   const debouncedResumeData = useDebounce(resumeData, 1000);
-
   const [activeSection, setActiveSection] = useState("personal");
-
   const [isSaving, setIsSaving] = useState(false);
-
-  //Mobile preview open/close track karne ke liye
   const [showMobilePreview, setShowMobilePreview] = useState(false);
-
-  //AI Loading state (Taaki user ko pata chale AI soch raha hai)
   const [enhancingKey, setEnhancingKey] = useState(null);
-
   const location = useLocation();
 
-// 🌟 AI AUTO-FILL, EDIT MODE & BLANK MODE MAGIC
   useEffect(() => {
-    // Agar Dashboard se Edit ya PDF data aaya hai
     if (location.state && location.state.importedData) {
       const data = location.state.importedData;
       const parseToString = (val) => Array.isArray(val) ? val.join(", ") : val || "";
@@ -156,8 +149,6 @@ const CreateResume = () => {
             },
             skills: parseToString(data.skills),
             languages: parseToString(data.languages),
-            
-            // Arrays (agar data missing hai toh empty array dalega)
             experience: data.experience || [],
             education: data.education || [],
             projects: data.projects || [],
@@ -174,10 +165,15 @@ const CreateResume = () => {
     } else {
       resetForm();
     }
-  }, [location.key]); // location.key ensures it runs on every new visit
+  }, [location.key]); 
 
- // 🤖 AI ENHANCE FUNCTION
+  // 🌟 FIX: INSTANT PAYWALLING LOGIC (Client-Side)
   const handleEnhanceDescription = async (index, section, text) => {
+    // 1. Instant check: Is user free? Show paywall instantly, don't hit API.
+    if (user?.plan === "free" && user?.role !== "admin") {
+      return openPaywall();
+    }
+
     if (!text || text.trim().length < 10) {
       return toast.error("Please write at least a few words for AI to understand! 😅");
     }
@@ -200,11 +196,12 @@ const CreateResume = () => {
       toast.success("Magic applied! ✨");
     } catch (error) {
       console.error(error);
-      // 🌟 MAGIC LOGIC: Check if error is due to limit
-      if (error.response?.data?.requiresUpgrade) {
+      if (error.response?.status === 429) {
+          toast.error("AI Server is busy. Please try again in a minute.");
+      } else if (error.response?.data?.requiresUpgrade) {
+        // Fallback if backend blocks it
         toast.error("Daily AI limit reached! Upgrade to Premium.");
-        // Seedha store se paywall open karo
-        useAuthStore.getState().openPaywall(); 
+        openPaywall(); 
       } else {
         toast.error("AI engine is sleeping or route not found!");
       }
@@ -217,7 +214,6 @@ const CreateResume = () => {
     if (!resumeData.title) return toast.error("Please name your resume.");
     setIsSaving(true);
 
-    // 🌟 THE CLEANER: Filter out empty entries that would trigger Validation Errors
     const cleanExperience = resumeData.experience.filter(exp => exp.company && exp.position);
     const cleanEducation = resumeData.education.filter(edu => edu.institution && edu.degree);
     const cleanProjects = resumeData.projects.filter(proj => proj.title);
@@ -235,14 +231,12 @@ const CreateResume = () => {
           : resumeData.languages,
     };
 
-    // Remove MongoDB internals
     delete formattedData._id;
     delete formattedData.__v;
     delete formattedData.createdAt;
     delete formattedData.updatedAt;
 
     try {
-        // ... (Baaki axios wala logic waisa hi rahega) ...
         let response;
         if (resumeData._id) {
            response = await axios.put(`${import.meta.env.VITE_API_URL}/api/resume/update/${resumeData._id}`, formattedData, { withCredentials: true });
@@ -281,17 +275,35 @@ const CreateResume = () => {
     };
   }, [debouncedResumeData]); 
 
+  // Helper component for AI Button to keep it DRY
+  const AIEnhanceButton = ({ index, section, text, isEnhancing }) => (
+      <button
+        type="button"
+        onClick={() => handleEnhanceDescription(index, section, text)}
+        disabled={isEnhancing}
+        className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-slate-900 dark:bg-slate-800 border border-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+      >
+        {isEnhancing ? (
+           <Sparkles size={14} className="animate-pulse text-amber-400" />
+        ) : user?.plan === "free" && user?.role !== "admin" ? (
+           <Crown size={14} className="text-amber-400 group-hover:scale-110 transition-transform" />
+        ) : (
+           <Sparkles size={14} className="text-amber-400 group-hover:scale-110 transition-transform" />
+        )}
+        {isEnhancing ? "Enhancing..." : "AI Enhance"}
+      </button>
+  );
+
   return (
     <>
       <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 overflow-hidden">
         <Toaster position="top-center" />
 
-        {/* 🌟 TOP WORKSPACE NAVBAR */}
         <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 z-10 shrink-0">
           <div className="flex items-center gap-3 w-1/2 md:w-1/3">
             <button
               onClick={() => navigate("/dashboard")}
-              className="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full transition-colors"
+              className="p-2 -ml-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-full transition-colors cursor-pointer"
             >
               <ArrowLeft size={20} />
             </button>
@@ -314,14 +326,14 @@ const CreateResume = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowMobilePreview(true)}
-              className="md:hidden flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium"
+              className="md:hidden flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium cursor-pointer transition-colors"
             >
               <Eye size={16} /> Preview
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-sm"
+              className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-sm cursor-pointer"
             >
               {isSaving ? (
                 <span className="animate-pulse">Saving...</span>
@@ -334,12 +346,9 @@ const CreateResume = () => {
           </div>
         </div>
 
-        {/* 🌟 SPLIT SCREEN LAYOUT */}
         <div className="flex-1 flex overflow-hidden">
-          {/* 👈 LEFT PANEL (The Accordion Form) */}
           <div className="w-full lg:w-[45%] h-full overflow-y-auto p-6 md:p-8 hide-scrollbar">
             <div className="max-w-xl  mx-auto pb-20">
-              {/* Personal Information */}
               <AccordionSection
                 title="Personal Information"
                 icon={User}
@@ -418,7 +427,6 @@ const CreateResume = () => {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      {/* 🌟 SMART SUMMARY TEXTAREA */}
                       <div className="md:col-span-2 relative mt-2">
                         <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                           Professional Summary
@@ -432,37 +440,19 @@ const CreateResume = () => {
                           placeholder="Write 1-2 lines about yourself, let AI do the rest..."
                           className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 p-2.5 rounded-lg focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all resize-none pb-12"
                         ></textarea>
-
-                        {/* Yahan hum index me 'null' bhej rahe hain */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleEnhanceDescription(
-                              null,
-                              "summary",
-                              resumeData.summary,
-                            )
-                          }
-                          disabled={enhancingKey === "summary"}
-                          className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Sparkles
-                            size={14}
-                            className={
-                              enhancingKey === "summary" ? "animate-pulse" : ""
-                            }
-                          />
-                          {enhancingKey === "summary"
-                            ? "Enhancing..."
-                            : "AI Enhance"}
-                        </button>
+                        
+                        <AIEnhanceButton 
+                          index={null} 
+                          section="summary" 
+                          text={resumeData.summary} 
+                          isEnhancing={enhancingKey === "summary"} 
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               </AccordionSection>
 
-              {/* Experience */}
               <AccordionSection
                 title="Work Experience"
                 icon={Briefcase}
@@ -480,7 +470,7 @@ const CreateResume = () => {
                   >
                     <button
                       onClick={() => removeArrayItem("experience", index)}
-                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium"
+                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium cursor-pointer"
                     >
                       Remove
                     </button>
@@ -513,7 +503,6 @@ const CreateResume = () => {
                         }
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-md outline-none focus:border-emerald-500 text-sm text-slate-800 dark:text-slate-200"
                       />
-                      {/* 🌟 FIX: Dates added */}
                       <input
                         type="text"
                         placeholder="Start Date (e.g. Jan 2023)"
@@ -543,7 +532,6 @@ const CreateResume = () => {
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-md outline-none focus:border-emerald-500 text-sm text-slate-800 dark:text-slate-200"
                       />
                     </div>
-                    {/* 🌟 Smart Textarea with AI Button */}
                     <div className="relative mt-3">
                       <textarea
                         placeholder="Type what you did, and let AI make it professional..."
@@ -559,30 +547,12 @@ const CreateResume = () => {
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl outline-none focus:border-emerald-500 text-sm h-28 resize-none text-slate-800 dark:text-slate-200 pb-12 transition-all"
                       ></textarea>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleEnhanceDescription(
-                            index,
-                            "experience",
-                            exp.description,
-                          )
-                        }
-                        disabled={enhancingKey === `experience-${index}`}
-                        className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Sparkles
-                          size={14}
-                          className={
-                            enhancingKey === `experience-${index}`
-                              ? "animate-pulse"
-                              : ""
-                          }
-                        />
-                        {enhancingKey === `experience-${index}`
-                          ? "Enhancing..."
-                          : "AI Enhance"}
-                      </button>
+                      <AIEnhanceButton 
+                          index={index} 
+                          section="experience" 
+                          text={exp.description} 
+                          isEnhancing={enhancingKey === `experience-${index}`} 
+                      />
                     </div>
                   </div>
                 ))}
@@ -596,13 +566,12 @@ const CreateResume = () => {
                       description: "",
                     })
                   }
-                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                 >
                   + Add Experience
                 </button>
               </AccordionSection>
 
-              {/* 3️⃣ Education */}
               <AccordionSection
                 title="Education"
                 icon={GraduationCap}
@@ -620,7 +589,7 @@ const CreateResume = () => {
                   >
                     <button
                       onClick={() => removeArrayItem("education", index)}
-                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium"
+                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium cursor-pointer"
                     >
                       Remove
                     </button>
@@ -697,7 +666,6 @@ const CreateResume = () => {
                       className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-md outline-none focus:border-emerald-500 text-sm mt-3 text-slate-800 dark:text-slate-200"
                     />
 
-                    {/* 🌟 NAYA DABBA: EDUCATION DESCRIPTION / COURSEWORK */}
                     <textarea
                       placeholder="Relevant coursework, achievements, or learnings..."
                       value={edu.description || ""}
@@ -721,16 +689,15 @@ const CreateResume = () => {
                       startDate: "",
                       endDate: "",
                       grade: "",
-                      description: "", // 🌟 Template me bhi daal diya
+                      description: "",
                     })
                   }
-                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                 >
                   + Add Education
                 </button>
               </AccordionSection>
 
-              {/* Skills */}
               <AccordionSection
                 title="Skills"
                 icon={Wrench}
@@ -749,7 +716,6 @@ const CreateResume = () => {
                 ></textarea>
               </AccordionSection>
 
-              {/* Projects */}
               <AccordionSection
                 title="Projects"
                 icon={FolderGit2}
@@ -767,7 +733,7 @@ const CreateResume = () => {
                   >
                     <button
                       onClick={() => removeArrayItem("projects", index)}
-                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium"
+                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium cursor-pointer"
                     >
                       Remove
                     </button>
@@ -815,7 +781,6 @@ const CreateResume = () => {
                       }
                       className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-md outline-none focus:border-emerald-500 text-sm mt-3 text-slate-800 dark:text-slate-200"
                     />
-                    {/* 🌟 SMART PROJECT TEXTAREA */}
                     <div className="relative mt-3">
                       <textarea
                         placeholder="What did you build? (e.g. Made an app using React)..."
@@ -831,30 +796,12 @@ const CreateResume = () => {
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-md outline-none focus:border-emerald-500 text-sm h-28 resize-none text-slate-800 dark:text-slate-200 pb-12 transition-all"
                       ></textarea>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleEnhanceDescription(
-                            index,
-                            "projects",
-                            proj.description,
-                          )
-                        }
-                        disabled={enhancingKey === `projects-${index}`}
-                        className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Sparkles
-                          size={14}
-                          className={
-                            enhancingKey === `projects-${index}`
-                              ? "animate-pulse"
-                              : ""
-                          }
-                        />
-                        {enhancingKey === `projects-${index}`
-                          ? "Enhancing..."
-                          : "AI Enhance"}
-                      </button>
+                      <AIEnhanceButton 
+                          index={index} 
+                          section="projects" 
+                          text={proj.description} 
+                          isEnhancing={enhancingKey === `projects-${index}`} 
+                      />
                     </div>
                   </div>
                 ))}
@@ -867,13 +814,12 @@ const CreateResume = () => {
                       description: "",
                     })
                   }
-                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                 >
                   + Add Project
                 </button>
               </AccordionSection>
 
-              {/* Certifications */}
               <AccordionSection
                 title="Certifications"
                 icon={Award}
@@ -891,7 +837,7 @@ const CreateResume = () => {
                   >
                     <button
                       onClick={() => removeArrayItem("certifications", index)}
-                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium"
+                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium cursor-pointer"
                     >
                       Remove
                     </button>
@@ -924,7 +870,6 @@ const CreateResume = () => {
                         }
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-md outline-none focus:border-emerald-500 text-sm text-slate-800 dark:text-slate-200"
                       />
-                      {/* 🌟 FIX: Date Field Added */}
                       <input
                         type="text"
                         placeholder="Year / Date"
@@ -965,13 +910,12 @@ const CreateResume = () => {
                       link: "",
                     })
                   }
-                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                 >
                   + Add Certification
                 </button>
               </AccordionSection>
 
-              {/*Languages */}
               <AccordionSection
                 title="Languages"
                 icon={Globe}
@@ -992,7 +936,6 @@ const CreateResume = () => {
                 ></textarea>
               </AccordionSection>
 
-              {/* Custom Sections */}
               <AccordionSection
                 title="Custom Section"
                 icon={Layers}
@@ -1001,7 +944,6 @@ const CreateResume = () => {
                   setActiveSection(activeSection === "custom" ? "" : "custom")
                 }
               >
-                {/* Custom Section Loop */}
                 {resumeData.customSections.map((custom, index) => (
                   <div
                     key={index}
@@ -1009,7 +951,7 @@ const CreateResume = () => {
                   >
                     <button
                       onClick={() => removeArrayItem("customSections", index)}
-                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium"
+                      className="absolute top-3 right-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium cursor-pointer"
                     >
                       Remove
                     </button>
@@ -1099,7 +1041,7 @@ const CreateResume = () => {
                       description: "",
                     })
                   }
-                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  className="w-full py-2 border-2 border-dashed border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors cursor-pointer"
                 >
                   + Add Custom Field
                 </button>
@@ -1107,9 +1049,7 @@ const CreateResume = () => {
             </div>
           </div>
 
-          {/* 👉 RIGHT PANEL (Live PDF Preview Engine) */}
           <div className="hidden lg:flex flex-col w-[55%] h-full bg-slate-200/50 dark:bg-slate-900/50 border-l border-slate-200 dark:border-slate-800 p-6 items-center">
-            {/* Smart Floating Hint Banner */}
             <div className="w-full max-w-[210mm] mb-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-400 p-3 rounded-xl flex items-center justify-between shadow-sm shrink-0">
               <span className="text-sm font-medium flex items-center gap-2">
                 <Sparkles size={16} /> Resume spilling to page 2? Adjust spacing
@@ -1117,14 +1057,13 @@ const CreateResume = () => {
               </span>
               <button
                 onClick={handleGoToPreview}
-                className="text-xs font-bold bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition-colors"
+                className="text-xs font-bold bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition-colors cursor-pointer"
               >
                 Go to Preview 🎛️
               </button>
             </div>
 
             <div className="w-full h-full max-w-[210mm] shadow-2xl rounded-sm overflow-hidden bg-white">
-              {/* Render strictly what the DB sees, ignore ghost Zustand state */}
               <MemoizedPDFView
                 data={stableSanitizedData}
                 settings={debouncedResumeData?.layoutSettings} 
@@ -1133,7 +1072,6 @@ const CreateResume = () => {
           </div>
         </div>
       </div>
-      {/* 📱 MOBILE PREVIEW MODAL */}
       <AnimatePresence>
         {showMobilePreview && (
           <motion.div
@@ -1143,7 +1081,6 @@ const CreateResume = () => {
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm md:hidden flex flex-col"
           >
-            {/* Modal Header */}
             <div className="bg-white dark:bg-slate-900 h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 shrink-0 rounded-t-2xl mt-12 shadow-lg z-10">
               <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
                 <Eye className="text-emerald-500" size={20} />
@@ -1151,13 +1088,12 @@ const CreateResume = () => {
               </div>
               <button
                 onClick={() => setShowMobilePreview(false)}
-                className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-600 dark:text-slate-400 transition-colors"
+                className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Modal Body (PDF Engine - MOBILE) */}
             <div className="flex-1 bg-slate-200 dark:bg-slate-800 relative overflow-hidden">
               <MemoizedPDFView
                 data={stableSanitizedData}

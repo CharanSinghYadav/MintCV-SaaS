@@ -4,7 +4,7 @@ FILE PURPOSE: user.model.js
 ========================================================
 
 Ye file User ka database structure (Schema) define karti hai.
-(Updated with Razorpay Ledger details)
+(Updated with Razorpay Ledger & Granular AI Quotas)
 ========================================================
 */
 
@@ -46,7 +46,15 @@ const userSchema = new Schema(
             enum: ["free", "premium"],
             default: "free"
         },
-        dailyAiUsageCount: {
+        dailyPdfCount: {
+            type: Number,
+            default: 0
+        },
+        dailyAtsCount: {
+            type: Number,
+            default: 0
+        },
+        dailyMockCount: {
             type: Number,
             default: 0
         },
@@ -68,11 +76,11 @@ const userSchema = new Schema(
         // ==========================================
         razorpayOrderId: {
             type: String,
-            default: null // Jab user pay pe click karega tab ye generate hoga
+            default: null 
         },
         razorpayPaymentId: {
             type: String,
-            default: null // Jab bank account se paise kat jayenge tab ye save hoga
+            default: null 
         }
     },
     { timestamps: true } 
@@ -97,7 +105,6 @@ userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
 
-// Access Token generate karne ka method
 userSchema.methods.generateToken = function () {
     return jwt.sign(
         {

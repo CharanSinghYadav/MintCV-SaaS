@@ -19,15 +19,19 @@ import {
   enhanceTextWithAI,
 } from "../services/ai.services.js";
 
-const tickUserAiMeter = async (userId) => {
-  if (!userId) return;
+// 🌟 FIX: Dynamic ticker accepts the specific field to increment
+const tickUserAiMeter = async (userId, fieldToIncrement) => {
+  if (!userId || !fieldToIncrement) return;
   try {
+    const incQuery = { lifetimeAiUsage: 1 };
+    incQuery[fieldToIncrement] = 1;
+
     await User.findByIdAndUpdate(userId, {
-      $inc: { dailyAiUsageCount: 1, lifetimeAiUsage: 1 },
+      $inc: incQuery,
       $set: { lastAiUsageDate: Date.now() }
     });
   } catch (err) {
-    console.error("⚠️ Failed to tick User AI Meter:", err.message);
+    console.error(`⚠️ Failed to tick User AI Meter [${fieldToIncrement}]:`, err.message);
   }
 };
 
@@ -84,7 +88,8 @@ export const evaluateResume = async (req, res) => {
     if (evaluationResult?.atsScore) {
       await Resume.findByIdAndUpdate(id, { lastAtsScore: evaluationResult.atsScore });
     }
-    await tickUserAiMeter(req.user.id || req.user._id);
+    // 🌟 FIX: Granular Tick
+    await tickUserAiMeter(req.user.id || req.user._id, "dailyAtsCount");
 
     return res.status(200).json({ message: "Resume evaluated successfully", evaluation: evaluationResult });
   } catch (error) {
@@ -110,60 +115,53 @@ export const generateInterviewPrep = async (req, res) => {
 
     if (!resume) return res.status(404).json({ success: false, message: "Resume not found" });
 
-    // 1. Check strict subscription status
     const isPremiumUser = req.user?.plan === "premium" || req.user?.plan === "PRO" || req.user?.role === "admin";
-
     let masterPrepData = null;
 
-    // GATEWAY 1: Check Master Cache in DB
     if (resume.interviewPrepCache?.questionsList?.length > 0) {
       console.log("⚡ Serving Interview Master Cache from MongoDB! (Bypassing AI Limits)");
       masterPrepData = resume.interviewPrepCache;
     } else {
-      // 🌟 THE INLINE BOUNCER: Triggered ONLY if we actually need to use AI
+      // 🌟 THE INLINE BOUNCER
       if (!isPremiumUser) {
         const userCheck = await User.findById(req.user.id || req.user._id);
         
         const today = new Date().toDateString();
-        // Safe check for lastAiUsageDate to prevent crash if it's null initially
         const lastUsageDate = userCheck.lastAiUsageDate ? new Date(userCheck.lastAiUsageDate).toDateString() : null;
 
-        // Reset if it's a new day
         if (today !== lastUsageDate) {
-            userCheck.dailyAiUsageCount = 0;
+            userCheck.dailyPdfCount = 0;
+            userCheck.dailyAtsCount = 0;
+            userCheck.dailyMockCount = 0;
             userCheck.lastAiUsageDate = Date.now();
             await userCheck.save();
         }
 
-        // Limit Check (Free user gets 1 hit per day across all features)
-        if (userCheck.dailyAiUsageCount >= 1) {
+        // 🌟 FIX: Soft Cap Limit Check for Mock Interviews (3 generates per day)
+        if (userCheck.dailyMockCount >= 3) {
             return res.status(403).json({
                 success: false,
-                message: "You have reached your daily limit of 1 AI request. Please upgrade to Premium.",
+                message: "You have reached your daily limit of 3 AI Mock Generations. Please upgrade to Premium.",
                 requiresUpgrade: true 
             });
         }
       }
 
-      // GATEWAY 2: Generate Fresh 10 Questions via AI
       console.log("🤖 Cache Missed. Generating fresh 10 Master Questions for DB storage...");
-      // Pass 'true' to AI service to force generating 10 hard scenario questions
       const aiGeneratedPrep = await generateInterviewQuestionsWithAI(resume.toObject(), true); 
       
       await Resume.findByIdAndUpdate(id, { interviewPrepCache: aiGeneratedPrep });
       masterPrepData = aiGeneratedPrep;
       
-      // Hit the AI Meter since we consumed API credits
-      await tickUserAiMeter(req.user.id || req.user._id);
+      // 🌟 FIX: Granular Tick
+      await tickUserAiMeter(req.user.id || req.user._id, "dailyMockCount");
     }
 
-    // 🔥 THE MASTERMIND WIRE-SLICE (Server-Side Paywalling)
-    // Agar user Free hai, toh network wire pe sirf 3 question bhejo, baki 7 RAM me hi drop maar do!
     const responsePrepPayload = {
       role: masterPrepData.role || "Software Engineer",
       questionsList: isPremiumUser 
         ? masterPrepData.questionsList 
-        : masterPrepData.questionsList.slice(0, 3) // <-- HACKER SHIELD
+        : masterPrepData.questionsList.slice(0, 3) 
     };
 
     return res.status(200).json({ 
@@ -201,7 +199,8 @@ export const uploadResumeFile = async (req, res) => {
 
     if (!cloudinaryResult) throw new Error("Cloudinary upload failed.");
 
-    await tickUserAiMeter(req.user.id || req.user._id);
+    // 🌟 FIX: Granular Tick
+    await tickUserAiMeter(req.user.id || req.user._id, "dailyPdfCount");
 
     return res.status(200).json({
       message: "File uploaded and parsed successfully",
@@ -239,7 +238,8 @@ export const enhanceResumeText = async (req, res) => {
     if (!text || text.trim().length < 5) return res.status(400).json({ message: "Text too short" });
 
     const enhancedText = await enhanceTextWithAI(text);
-    await tickUserAiMeter(req.user.id || req.user._id);
+    // Lifetime only, as feature is already premium locked
+    await tickUserAiMeter(req.user.id || req.user._id, "lifetimeAiUsage"); 
     return res.status(200).json({ message: "Success", enhancedText });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

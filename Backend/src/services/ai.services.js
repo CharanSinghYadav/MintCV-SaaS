@@ -6,9 +6,6 @@ FILE PURPOSE: ai.services.js (PRODUCTION GRADE V2)
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// ==========================================
-// 💡 HELPER: EXPONENTIAL BACKOFF RETRY LOGIC
-// ==========================================
 const executeWithRetry = async (aiFunction, maxRetries = 3, baseDelay = 2000) => {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -33,14 +30,13 @@ const executeWithRetry = async (aiFunction, maxRetries = 3, baseDelay = 2000) =>
     }
 };
 
-// 🌟 BRAHMASTRA HELPER: Gemini ke markdown backticks ko fail-safe strip karne ka logic
 const cleanAndParseAiJson = (rawString) => {
     if (!rawString) throw new Error("AI returned an empty string response.");
     try {
         const stripped = rawString
-            .replace(/^```json\s*/i, "") // Remove starting ```json
-            .replace(/^```\s*/, "")     // Remove starting ```
-            .replace(/\s*```$/, "")     // Remove ending ```
+            .replace(/^```json\s*/i, "") 
+            .replace(/^```\s*/, "")     
+            .replace(/\s*```$/, "")     
             .trim();
         return JSON.parse(stripped);
     } catch (err) {
@@ -52,7 +48,7 @@ const cleanAndParseAiJson = (rawString) => {
 const resumeEvaluationSchema = {
     type: Type.OBJECT,
     properties: {
-        atsScore: { type: Type.INTEGER, description: "ATS matching score out of 100" },
+        atsScore: { type: Type.INTEGER, description: "ATS matching score out of 100 based on the rubric" },
         feedback: { type: Type.STRING, description: "2-3 line general feedback about the resume" },
         missingKeywords: { type: Type.ARRAY, items: { type: Type.STRING } },
         suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
@@ -65,10 +61,7 @@ const extractedResumeSchema = {
     properties: {
         title: { type: Type.STRING },
         professionalTitle: { type: Type.STRING },
-        summary: { 
-            type: Type.STRING, 
-            description: "The professional summary or objective statement from the resume" 
-        }, 
+        summary: { type: Type.STRING }, 
         personalInfo: {
             type: Type.OBJECT,
             properties: {
@@ -105,10 +98,7 @@ const extractedResumeSchema = {
                     startDate: { type: Type.STRING },
                     endDate: { type: Type.STRING },
                     grade: { type: Type.STRING },
-                    description: { 
-                        type: Type.STRING,
-                        description: "Relevant coursework, achievements, or projects done during this degree"
-                    } 
+                    description: { type: Type.STRING } 
                 }
             }
         },
@@ -129,14 +119,8 @@ const extractedResumeSchema = {
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    title: { 
-                        type: Type.STRING,
-                        description: "STRICTLY the Course Name ONLY (e.g., 'Career Essentials in Generative AI'). Strip platform names out!"
-                    },
-                    issuer: { 
-                        type: Type.STRING,
-                        description: "The Issuing Authority or Platform ONLY (e.g., 'Microsoft & LinkedIn Learning')."
-                    },
+                    title: { type: Type.STRING },
+                    issuer: { type: Type.STRING },
                     date: { type: Type.STRING },
                     link: { type: Type.STRING }
                 }
@@ -175,7 +159,6 @@ export const extractResumeDataWithAI = async (rawPdfText) => {
             });
         });
 
-        // 🔥 FIX: Cleaned via custom wrapper instead of raw JSON.parse
         return cleanAndParseAiJson(response.text);
     } catch (error) {
         console.error("AI Extraction Error: ", error.message);
@@ -187,10 +170,18 @@ export const extractResumeDataWithAI = async (rawPdfText) => {
 export const evaluateResumeWithAI = async (resumeData) => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY });
-        const promptText = `
-        You are an expert HR and ATS software.
-        Evaluate this resume data and provide strict JSON output.
         
+        // 🌟 FIX: Implemented the 5-Parameter Rubric for accurate Scoring
+        const promptText = `
+        You are an expert HR and ATS software. Evaluate this resume data and provide strict JSON output.
+        
+        CALCULATE THE ATS SCORE STRICTLY USING THIS 5-PARAMETER RUBRIC (Total 100 points):
+        1. Impact & Quantifiability (30 points): Do bullet points include metrics/numbers? (e.g., "Increased sales by 20%"). Penalize vague statements.
+        2. Action Verbs (20 points): Do experience/project points start with strong action verbs (Architected, Spearheaded, Developed)?
+        3. Parsability & Structure (20 points): Are essential sections present and adequately filled?
+        4. Contact & Link Density (10 points): Are Email, Phone, and professional links (GitHub/LinkedIn/Portfolio) present?
+        5. Fluff & Buzzwords (20 points): Deduct points heavily for generic fluff ("hardworking", "team player"). Award points for hard technical skills.
+
         Resume Data:
         ${JSON.stringify(resumeData)}
         `;
@@ -205,7 +196,6 @@ export const evaluateResumeWithAI = async (resumeData) => {
                     temperature: 0.2,
                 }
             });
-            // 🔥 FIX: Cleaned via custom wrapper
             return cleanAndParseAiJson(response.text);
         });
 
@@ -264,7 +254,6 @@ export const generateInterviewQuestionsWithAI = async (resumeData, isPremium = f
                     temperature: 0.2,
                 }
             });
-            // 🔥 FIX: Cleaned via custom wrapper
             return cleanAndParseAiJson(response.text);
         });
 
