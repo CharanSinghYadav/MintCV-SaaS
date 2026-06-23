@@ -21,6 +21,7 @@ import mongoSanitize from "express-mongo-sanitize";
 import rateLimit from "express-rate-limit";
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(helmet());
 
