@@ -1,6 +1,6 @@
 /*
 ========================================================
-FILE PURPOSE: server.js (DevOps Commander)
+FILE PURPOSE: server.js (DevOps Commander V2)
 ========================================================
 */
 
@@ -19,8 +19,10 @@ let server;
 
 connectToDB()
   .then(() => {
-    const PORT = process.env.PORT || 3000;
-    server = app.listen(PORT, () => {
+    const PORT = process.env.PORT || 5000; // Fallback 5000 rakha hai
+    
+    // 🌟 FIX: "0.0.0.0" added explicitly. Sanjeevani for Render Docker containers!
+    server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 MintCV Production Engine live in [${process.env.NODE_ENV || "development"}] mode at port ${PORT}`);
     });
   })

@@ -102,10 +102,26 @@ export const logoutUserController = async (req, res) => {
 // 4. GET ME (Current User)
 // ==========================================
 export const getMeController = async (req, res) => {
-    const user = await User.findById(req.user.id);
+    try {
+        // 🌟 FIX: _id vs id safe check to prevent 500 crashes
+        const userId = req.user.id || req.user._id;
+        
+        if (!userId) {
+             return res.status(401).json({ message: "Unauthorized Request: User ID missing in token" });
+        }
 
-    return res.status(200).json({
-        message: "User details fetched successfully",
-        user: { id: user._id, username: user.username, email: user.email, plan: user.plan, role: user.role }
-    });
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found in database" });
+        }
+
+        return res.status(200).json({
+            message: "User details fetched successfully",
+            user: { id: user._id, username: user.username, email: user.email, plan: user.plan, role: user.role }
+        });
+    } catch (error) {
+        console.error("GetMe Error:", error);
+        return res.status(500).json({ message: "Internal server error during authentication check" });
+    }
 };

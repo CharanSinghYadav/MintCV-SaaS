@@ -167,20 +167,41 @@ export const extractResumeDataWithAI = async (rawPdfText) => {
     }
 };
 
+// ============================================================================
+// 📊 ATS EVALUATOR (MATHEMATICAL 100-POINT GAMIFIED RUBRIC)
+// ============================================================================
 export const evaluateResumeWithAI = async (resumeData) => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY });
         
-        // 🌟 FIX: Implemented the 5-Parameter Rubric for accurate Scoring
+        // Dynamic Role Extraction
+        const userRole = resumeData.professionalTitle || "Professional";
+
+        // 🌟 FIX: User's exact 100-Point distribution injected with Field-Agnostic logic
         const promptText = `
-        You are an expert HR and ATS software. Evaluate this resume data and provide strict JSON output.
+        You are an elite HR and ATS scoring engine evaluating a resume strictly for the target role of "${userRole}".
         
-        CALCULATE THE ATS SCORE STRICTLY USING THIS 5-PARAMETER RUBRIC (Total 100 points):
-        1. Impact & Quantifiability (30 points): Do bullet points include metrics/numbers? (e.g., "Increased sales by 20%"). Penalize vague statements.
-        2. Action Verbs (20 points): Do experience/project points start with strong action verbs (Architected, Spearheaded, Developed)?
-        3. Parsability & Structure (20 points): Are essential sections present and adequately filled?
-        4. Contact & Link Density (10 points): Are Email, Phone, and professional links (GitHub/LinkedIn/Portfolio) present?
-        5. Fluff & Buzzwords (20 points): Deduct points heavily for generic fluff ("hardworking", "team player"). Award points for hard technical skills.
+        CALCULATE THE ATS SCORE STRICTLY USING THIS EXACT 100-POINT MATHEMATICAL SYSTEM:
+        
+        1. Skills Section (Max 20 Points):
+           - Award 20/20 if strong, highly relevant hard skills/tools for a "${userRole}" are clearly listed.
+           - Deduct points heavily if this section is empty or filled with vague fluff.
+
+        2. Projects OR Work Experience Section (Max 25 Points):
+           - Award 25/25 if detailed descriptions of past jobs, internships, OR personal projects are present.
+           - Award maximum points if bullet points contain quantifiable results (e.g., numbers, % growth). 
+
+        3. Education Section (Max 15 Points):
+           - Award 15/15 if Institution Name, Degree, and passing timeline/grades are clearly stated.
+
+        4. Formatting & Parsability (Max 15 Points):
+           - Award 15/15 if the document structure is clean, standard section headers exist, and contact details (Email, Phone) are valid.
+
+        5. Keywords Relevance (Max 25 Points):
+           - Award 25/25 based on keyword density. How strongly do the candidate's extracted words match the high-value industry standard keywords for a "${userRole}"?
+
+        CRITICAL OUTPUT RULE:
+        In your 'feedback' string and 'suggestions' array, explicitly guide the candidate on which specific bucket lost them points (e.g., "Your score dropped because your Projects section lacks quantifiable numbers").
 
         Resume Data:
         ${JSON.stringify(resumeData)}
@@ -193,7 +214,7 @@ export const evaluateResumeWithAI = async (resumeData) => {
                 config: {
                     responseMimeType: "application/json",
                     responseSchema: resumeEvaluationSchema,
-                    temperature: 0.2,
+                    temperature: 0.1, // 🌟 Very low temp so AI strictly sticks to the math
                 }
             });
             return cleanAndParseAiJson(response.text);
@@ -227,18 +248,32 @@ const interviewQuestionsSchema = {
     required: ["role", "questionsList"]
 };
 
+// ============================================================================
+// 🤖 THE DYNAMIC INTERVIEW PROMPT (UNIVERSAL FOR ALL FIELDS)
+// ============================================================================
 export const generateInterviewQuestionsWithAI = async (resumeData, isPremium = false) => {
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENAI_API_KEY });
         const questionCount = isPremium ? 10 : 3;
+        
+        // 🌟 FIX: Dynamic Role Extraction
+        // Agar user ne title nahi diya, toh AI ko "Professional" treat karne bolenge
+        const userRole = resumeData.professionalTitle || "Professional";
+
+        // 🌟 FIX: Dynamic Difficulty based on their actual role
         const difficultyTarget = isPremium 
-            ? "Mix of Medium and Advanced FAANG scenario-based coding traps." 
-            : "Standard foundational and entry-level conceptual questions.";
+            ? `Advanced, deep-dive scenario-based questions specific to the ${userRole} industry.` 
+            : `Standard foundational and entry-level screening questions for a ${userRole}.`;
 
         const promptText = `
-        You are an elite technical interviewer.
-        Analyze this resume and generate EXACTLY ${questionCount} highly relevant technical interview questions.
-        Target Difficulty: ${difficultyTarget}
+        You are an elite, highly adaptable expert interviewer for ALL industries globally.
+        Analyze this resume and generate EXACTLY ${questionCount} highly relevant interview questions.
+        
+        CRITICAL RULES:
+        1. Identify the candidate's exact industry (e.g., Software, Finance, Marketing, Healthcare, Arts, Management, etc.) based on their resume.
+        2. Ask questions strictly relevant to THEIR specific field and the role of "${userRole}".
+        3. DO NOT ask coding, technical, or FAANG questions UNLESS the resume clearly belongs to the Software/IT domain.
+        4. Target Difficulty: ${difficultyTarget}
         
         Resume Data:
         ${JSON.stringify(resumeData)}
@@ -251,7 +286,7 @@ export const generateInterviewQuestionsWithAI = async (resumeData, isPremium = f
                 config: {
                     responseMimeType: "application/json",
                     responseSchema: interviewQuestionsSchema,
-                    temperature: 0.2,
+                    temperature: 0.2, // Low temperature rakhi hai taaki AI zyada hallucinate na kare
                 }
             });
             return cleanAndParseAiJson(response.text);

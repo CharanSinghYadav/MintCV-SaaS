@@ -18,9 +18,15 @@ Ye bouncer check karega:
 import jwt from "jsonwebtoken";
 import { BlacklistToken } from "../models/blacklist.model.js";
 
+// Same cookie options as auth.controller for clean flush
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+};
+
 const authUser = async (req, res, next) => {
     try {
-        // 🔥 FIX: Token ko Cookie me dhoondo, ya fir 'Authorization' header me dhoondo
         const token = req.cookies?.token || req.header("Authorization")?.replace("Bearer ", "");
         
         if (!token) {
@@ -30,6 +36,7 @@ const authUser = async (req, res, next) => {
         const isTokenBlacklisted = await BlacklistToken.findOne({ token });
 
         if (isTokenBlacklisted) {
+            res.clearCookie("token", cookieOptions);
             return res.status(401).json({ message: "Unauthorized Request: Token is blacklisted" });    
         }
 
@@ -39,6 +46,9 @@ const authUser = async (req, res, next) => {
         next();
 
     } catch (error) {
+        // 🌟 FIX: POISONED COOKIE FLUSH (Safe-Catch)
+        console.warn("🛡️ Auth Middleware caught invalid token. Flushing cookie...");
+        res.clearCookie("token", cookieOptions);
         return res.status(401).json({ message: "Invalid or Expired token" });
     }
 };

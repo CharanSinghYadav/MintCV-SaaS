@@ -79,7 +79,6 @@ const InterviewPrep = () => {
           withCredentials: true,
         });
 
-        // 🔥 FIX: Grabbed 'response.data.prep' specifically
         const payload = response.data.prep;
         setPrepData(payload);
         setIsPremiumView(response.data.isPremiumView);
@@ -108,18 +107,19 @@ const InterviewPrep = () => {
           <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-30 animate-pulse"></div>
         </div>
         <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">AI Coach is reverse-engineering your resume...</h2>
-        <p className="text-slate-500 mt-2 text-sm font-medium max-w-md">Analyzing your tech stack, GitHub projects, and experience to generate specific FAANG interview scenarios.</p>
+        <p className="text-slate-500 mt-2 text-sm font-medium max-w-md">Analyzing your background to generate specific FAANG interview scenarios.</p>
       </div>
     );
   }
 
-  if (!prepData || !prepData.questionsList) {
+  // 🌟 FIX: Updated fallback UI handling
+  if (!prepData || !prepData.questionsList || prepData.questionsList.length === 0) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500 px-4 text-center">
         <AlertTriangle size={52} className="mb-4 text-amber-500 animate-pulse" />
-        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Failed to compile interview script</h3>
-        <p className="text-xs text-slate-400 mt-1 mb-6">Our AI couldn't find enough structured hard-skills in this document.</p>
-        <button onClick={() => navigate("/dashboard")} className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:scale-105 transition-transform">
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Interview Setup Failed</h3>
+        <p className="text-xs text-slate-400 mt-1 mb-6">We couldn't generate questions for this document format.</p>
+        <button onClick={() => navigate("/dashboard")} className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:scale-105 transition-transform cursor-pointer">
           Return to Workspace
         </button>
       </div>
@@ -135,7 +135,7 @@ const InterviewPrep = () => {
         {/* HEADER BAR */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate("/dashboard")} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-300 transition-all shadow-sm">
+            <button onClick={() => navigate("/dashboard")} className="p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-300 transition-all shadow-sm cursor-pointer">
               <ArrowLeft size={20} />
             </button>
             <div>
@@ -166,7 +166,6 @@ const InterviewPrep = () => {
             <QuestionCard key={index} item={item} index={index} />
           ))}
 
-          {/* 🔥 THE GORGEOUS PRO PAYWALL LOCK BANNER (Rendered strictly for Free users!) */}
           {!isPremiumView && (
             <motion.div 
               initial={{ opacity: 0, scale: 0.98 }}
